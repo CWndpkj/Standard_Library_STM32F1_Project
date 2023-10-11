@@ -43,7 +43,7 @@ u8 USART_Helper_Init()
     DMA_InitSruct.DMA_BufferSize         = 256;
     DMA_InitSruct.DMA_DIR                = DMA_DIR_PeripheralSRC; // 转运方向
     DMA_InitSruct.DMA_M2M                = DMA_M2M_Disable;       // mem关闭
-    DMA_InitSruct.DMA_MemoryBaseAddr     = (uint32_t)USART_Helper_Buff;
+    DMA_InitSruct.DMA_MemoryBaseAddr     = (uint32_t)USART_Helper_pRcvBuff;
     DMA_InitSruct.DMA_MemoryDataSize     = DMA_MemoryDataSize_Byte; // 大小Byte
     DMA_InitSruct.DMA_MemoryInc          = DMA_MemoryInc_Enable;
     DMA_InitSruct.DMA_Mode               = DMA_Mode_Circular; // 自动重装
@@ -59,7 +59,7 @@ u8 USART_Helper_Init()
 
 u8 USART_Helper_GetDataReadyFlag(uint8_t length)
 {
-    if (256 - DMA_GetCurrDataCounter(DMA1_Channel5) >= USART_Helper_pBuff + length) {
+    if (256 - DMA_GetCurrDataCounter(DMA1_Channel5) >= USART_Helper_pRcvBuff + length) {
         return 1;
     } else
         return 0;
@@ -69,7 +69,7 @@ u8 USART_Helper_RcvLen(uint8_t *PackDataBuff, uint8_t length)
     if (!USART_Helper_GetDataReadyFlag(length))
         return 0;
     for (uint8_t i = 0; i < length; i++) {
-        PackDataBuff[i] = USART_Helper_Buff[USART_Helper_pBuff++];
+        PackDataBuff[i] = USART_Helper_Buff[USART_Helper_pRcvBuff++];
     }
     return 1;
 }
