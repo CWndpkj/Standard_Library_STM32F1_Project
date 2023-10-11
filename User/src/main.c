@@ -14,7 +14,7 @@ void HardWareInit()
     Delay_ms(200);
     USART_Helper_Init();
     OLED_Init();
-    //  AHT20_Init();
+    AHT20_Init();
     //  RTC_Helper_Init();
     // OLED_ShowNum(1,1,MPU6500_DMP_Init(),1);
     MPU6500_Init();
@@ -26,7 +26,7 @@ float value[3];
 int main()
 {
     HardWareInit();
-    // AHT20_value AHT_value;
+    AHT20_value AHT_value;
     // MPU6500_Value MPU_value;
     // MPU6500_StartAquire();
     // OLED_ShowString(1, 1, "hello world");
@@ -40,12 +40,12 @@ int main()
         printf("%s:%f\t\n", "roll:", value[1]);
         printf("%s:%f\t\n", "yaw:", value[2]);
 
-        // AHT20_GetValue(&AHT_value);
+        AHT20_GetValue(&AHT_value);
         // MPU6500_GetValue(&MPU_value);
-        // printf("%s", "湿度:");
-        //  printf("%f\t\n", AHT_value.Humidity);
-        //  printf("%s", "温度:");
-        //  printf("%f\t\n", AHT_value.Temperature);
+        printf("%s", "湿度:");
+        printf("%f\t\n", AHT_value.Humidity);
+        printf("%s", "温度:");
+        printf("%f\t\n", AHT_value.Temperature);
         //  printf("%s", "MPU输出:");
         //  printf("%f\t\n", MPU6500_GetTemperature());
         // MPU6500_Send2Host(MPU_value.ACCEL_XOUT, MPU_value.ACCEL_YOUT, MPU_value.ACCEL_ZOUT,
