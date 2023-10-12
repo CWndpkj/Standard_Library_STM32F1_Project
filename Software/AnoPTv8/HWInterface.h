@@ -1,7 +1,7 @@
 #ifndef __HARDWAREINTERFACE_H
 #define __HARDWAREINTERFACE_H
 #include <stdint.h>
-#include "stm32f4xx.h"
+#include "stm32f10x.h"
 
 void AnoPTv8HwSendBytes(uint8_t *buf, uint16_t len);
 void AnoPTv8HwRecvByte(uint8_t dat);

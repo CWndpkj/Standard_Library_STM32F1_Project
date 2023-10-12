@@ -77,19 +77,24 @@ u8 USART_Helper_Init()
  */
 void USART1_IRQHandler(void)
 {
-    // USART主线空闲,此时对接收数据进行判定,查看是否接收到数据
-    u8 length = USART_Helper_GetRcvLen();
-    if (length != 0) {
-        // TODO:调用自定义的数据处理函数,接收到的数据储存在USART_Helper_RcvBuff[]中,长度为length
-        // 从USART_Helper_RcvBuff[USART_Helper_pRcvBuff]开始,长度为length
-        // note:读取数据后必须将缓存数组的指针移动相应的位
-        // 采用以下格式 : USART_Helper_RcvBuff[USART_Helper_pRcvBuff++] 读取数据
-        for (u8 i = 0; i < length; i++) {
-            AnoPTv8HwRecvByte(USART_Helper_RcvBuff[USART_Helper_pRcvBuff++]);
-            printf("%c", USART_Helper_RcvBuff[USART_Helper_pRcvBuff++]);
+    static u8 i = 0;
+    if (USART_GetITStatus(USART1, USART_IT_IDLE) == SET) {
+        printf("%d\t", i);
+        // USART主线空闲,此时对接收数据进行判定,查看是否接收到数据
+        u8 length = USART_Helper_GetRcvLen();
+        if (length != 0) {
+            // TODO:调用自定义的数据处理函数,接收到的数据储存在USART_Helper_RcvBuff[]中,长度为length
+            // 从USART_Helper_RcvBuff[USART_Helper_pRcvBuff]开始,长度为length
+            // note:读取数据后必须将缓存数组的指针移动相应的位
+            // 采用以下格式 : USART_Helper_RcvBuff[USART_Helper_pRcvBuff++] 读取数据
+            for (u8 i = 0; i < length; i++) {
+                AnoPTv8HwRecvByte(USART_Helper_RcvBuff[USART_Helper_pRcvBuff++]);
+            }
+            // note:注意查看参数! 不可通过以下方式清除IDLE,因为IDLE位为只读
+            // USART_ClearITPendingBit(USART1,USART_IT_IDLE); // 清除中断标志位
+            // 按照手册,读取SR寄存器,再读取DR寄存器,可清除   USART_IT_IDLE  标志位
+            USART1->DR; // 清除   USART_IT_IDLE  标志位
         }
-
-        USART_ClearITPendingBit(USART1, USART_IT_IDLE); // 清除中断标志位
     }
 }
 
@@ -98,12 +103,12 @@ void UASRT_Helper_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u32 BufferSize, u3
     DMA_Cmd(DMAy_Channelx, DISABLE); // 关闭DMA
     DMA_InitTypeDef DMA_InitSruct;
     DMA_InitSruct.DMA_BufferSize         = BufferSize;
-    DMA_InitSruct.DMA_DIR                = DIR; // 转运方向
-    DMA_InitSruct.DMA_M2M                = DMA_M2M_Disable;       // mem关闭
+    DMA_InitSruct.DMA_DIR                = DIR;             // 转运方向
+    DMA_InitSruct.DMA_M2M                = DMA_M2M_Disable; // mem关闭
     DMA_InitSruct.DMA_MemoryBaseAddr     = MemoryBaseAddr;
     DMA_InitSruct.DMA_MemoryDataSize     = DMA_MemoryDataSize_Byte; // 大小Byte
     DMA_InitSruct.DMA_MemoryInc          = DMA_MemoryInc_Enable;
-    DMA_InitSruct.DMA_Mode               = Mode; 
+    DMA_InitSruct.DMA_Mode               = Mode;
     DMA_InitSruct.DMA_PeripheralBaseAddr = (uint32_t)&USART1->DR;
     DMA_InitSruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
     DMA_InitSruct.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
@@ -131,7 +136,7 @@ u8 USART_Helper_SendLen(uint8_t *pBuff, uint8_t length)
     // 初始化DMA
     UASRT_Helper_DMAInit(DMA1_Channel4, length, DMA_DIR_PeripheralDST, (u32)pBuff, DMA_Mode_Normal);
     // 开启DMA
-    DMA_Cmd(DMA1_Channel5, ENABLE);
+    DMA_Cmd(DMA1_Channel4, ENABLE);
     return 0;
 }
 

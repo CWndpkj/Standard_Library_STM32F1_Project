@@ -7,7 +7,7 @@
 #include "HWInterface.h"
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-·¢ËÍÊı¾İÊ±£¬¸ù¾İÊı¾İÖ¡¼ÆËãsumcheckºÍaddcheck
+å‘é€æ•°æ®æ—¶ï¼Œæ ¹æ®æ•°æ®å¸§è®¡ç®—sumcheckå’Œaddcheck
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void AnoPTv8CalFrameCheck(_un_frame_v8 *p)
@@ -53,7 +53,7 @@ void AnoPTv8SendBuf(uint8_t daddr, uint8_t fid, uint8_t *buf, uint16_t len)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-Ğ£ÑéÖ¡·¢ËÍ
+æ ¡éªŒå¸§å‘é€
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AnoPTv8SendCheck(uint8_t daddr, uint8_t id, uint8_t sc, uint8_t ac)
@@ -81,7 +81,7 @@ void AnoPTv8SendCheck(uint8_t daddr, uint8_t id, uint8_t sc, uint8_t ac)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-Éè±¸ĞÅÏ¢Ö¡·¢ËÍ
+è®¾å¤‡ä¿¡æ¯å¸§å‘é€
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AnoPTv8SendDevInfo(uint8_t daddr)
@@ -113,7 +113,7 @@ void AnoPTv8SendDevInfo(uint8_t daddr)
         AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = BYTE1(_tmp);
         uint8_t i=0;
         char *str = "TestDevice123";
-        while(*(str+i) != '\0')//µ¥ÒıºÅ×Ö·û£¬Ë«ÒıºÅ×Ö·û´®
+        while(*(str+i) != '\0')//å•å¼•å·å­—ç¬¦ï¼ŒåŒå¼•å·å­—ç¬¦ä¸²
         {
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = *(str+i++);
             if(i > 20)
@@ -129,7 +129,7 @@ void AnoPTv8SendDevInfo(uint8_t daddr)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-×Ö·û´®ĞÅÏ¢·¢ËÍ
+å­—ç¬¦ä¸²ä¿¡æ¯å‘é€
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AnoPTv8SendStr(uint8_t daddr, uint8_t string_color, char *str)
@@ -148,7 +148,7 @@ void AnoPTv8SendStr(uint8_t daddr, uint8_t string_color, char *str)
         /***********************************************************************/
         AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = string_color;
         uint8_t i=0;
-        while(*(str+i) != '\0')//µ¥ÒıºÅ×Ö·û£¬Ë«ÒıºÅ×Ö·û´®
+        while(*(str+i) != '\0')//å•å¼•å·å­—ç¬¦ï¼ŒåŒå¼•å·å­—ç¬¦ä¸²
         {
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = *(str+i++);
             if(i > 50)
@@ -181,7 +181,7 @@ void AnoPTv8SendValStr(uint8_t daddr, float val, char *str)
         AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = BYTE2(val);
         AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = BYTE3(val);
         uint8_t i=0;
-        while(*(str+i) != '\0')//µ¥ÒıºÅ×Ö·û£¬Ë«ÒıºÅ×Ö·û´®
+        while(*(str+i) != '\0')//å•å¼•å·å­—ç¬¦ï¼ŒåŒå¼•å·å­—ç¬¦ä¸²
         {
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = *(str+i++);
             if(i > 50)
@@ -197,7 +197,7 @@ void AnoPTv8SendValStr(uint8_t daddr, float val, char *str)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-²ÎÊıÀàÖ¡·¢ËÍ
+å‚æ•°ç±»å¸§å‘é€
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AnoPTv8SendParNum(uint8_t daddr)
@@ -296,7 +296,7 @@ void AnoPTv8SendParInfo(uint8_t daddr, uint16_t parid)
         for(uint8_t i=0; i<20; i++)
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = _p.name[i];
         uint8_t i=0;
-        while(_p.info[i] != '\0')//µ¥ÒıºÅ×Ö·û£¬Ë«ÒıºÅ×Ö·û´®
+        while(_p.info[i] != '\0')//å•å¼•å·å­—ç¬¦ï¼ŒåŒå¼•å·å­—ç¬¦ä¸²
         {
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = _p.info[i++];
             if(i > 50)
@@ -312,7 +312,7 @@ void AnoPTv8SendParInfo(uint8_t daddr, uint16_t parid)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
-ÃüÁîÀàÖ¡·¢ËÍ
+å‘½ä»¤ç±»å¸§å‘é€
 */
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void AnoPTv8SendCmdNum(uint8_t daddr)
@@ -379,7 +379,7 @@ void AnoPTv8SendCmdInfo(uint8_t daddr, uint16_t cmd)
         for(uint8_t i=0; i<20; i++)
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = _p.name[i];
         uint8_t i=0;
-        while(_p.info[i] != '\0')//µ¥ÒıºÅ×Ö·û£¬Ë«ÒıºÅ×Ö·û´®
+        while(_p.info[i] != '\0')//å•å¼•å·å­—ç¬¦ï¼ŒåŒå¼•å·å­—ç¬¦ä¸²
         {
             AnoPTv8TxBuf[bufindex].dataBuf.frame.data[_cnt++] = _p.info[i++];
             if(i > 50)
