@@ -8,6 +8,7 @@
 #include "delay.h"
 #include "USART_Helper.h"
 
+//定义MPU6500寄存器地址
 #define MPU6500_SELF_TEST_X_GYRO  0x00
 #define MPU6500_SELF_TEST_Y_GYRO  0x01
 #define MPU6500_SELF_TEST_Z_GYRO  0x02
@@ -48,7 +49,10 @@
 #define MPU6500_WHO_AM_I          0x75
 #define MPU6500_ADDR              0xD0
 
+//MPU输出速率(最大不超过200Hz)
 #define DEFAULT_MPU_HZ            100 // 100Hz
+
+//设置传感器的方向
 /* Platform-specific information. Kinda like a boardfile. */
 struct platform_data_s {
     signed char orientation[9];
@@ -75,55 +79,30 @@ v'y  = {(r21  * vx) +( r22 * vy) +( r23 * vz)}
 v'z  = {(r31  * vx) +( r32 * vy) +( r33 * vz)}
 */
 
+/**
+ * @brief MPU6500初始化函数
+ */
 void MPU6500_Init()
 {
     I2C_Helper_Init();
     MPU6500_DMP_Init();
 }
 
-u8 MPU6500_GetAddr()
+/**
+ * @brief MPU6500获取器件ID,通常用于测试
+ * @return u8 返回器件地址，固定为0x70若返回值不一致，说明通讯错误
+ */
+u8 MPU6500_GetDeviceID()
 {
     u8 Addr;
     I2C_Helper_ReadByte(MPU6500_ADDR, MPU6500_WHO_AM_I, &Addr);
     return Addr;
 }
 
-// u8 I2C_Helper_WriteByte(u8 DeviceAddr, u8 RegAddr, u8 *pBuff);
-u8 MPU6500_StartAquire()
-{
-    // 唤醒睡眠模式
-    u8 flag = 0;
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_PWR_MGMT_1, 0x01)) flag = 1; // 复位MPU
-    Delay_ms(100);
-
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_PWR_MGMT_2, 0x00)) flag = 1;
-    Delay_ms(100);
-
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_SMPLRT_DIV, 0x07)) flag = 1; // 陀螺仪采样率，典型值：0x07(125Hz)
-    Delay_ms(100);
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_CONFIG, 0x06)) flag = 1; // 低通滤波频率，典型值：0x06(5Hz)
-    Delay_ms(100);
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_GYRO_CONFIG, 0x18)) flag = 1; // 陀螺仪自检及测量范围，典型值：0x18(不自检，2000deg/s)
-    Delay_ms(100);
-    if (I2C_Helper_WriteByte(MPU6500_ADDR, MPU6500_ACCEL_CONFIG, 0x01)) flag = 1; // 加速计自检、测量范围及高通滤波频率，典型值：0x01(不自检，2G，5Hz)
-    return flag;
-}
-// u8 I2C_Helper_Read_Len(u8 DeviceAddr, u8 RegAddr, u8 length, u8 *pBuff);
-void MPU6500_GetValue(MPU6500_Value *value)
-{
-    u8 Buff[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    float raw;
-    I2C_Helper_Read_Len(MPU6500_ADDR, MPU6500_ACCEL_XOUT_H, 14, Buff);
-    value->ACCEL_XOUT = Buff[0] << 8 | Buff[1];
-    value->ACCEL_YOUT = Buff[2] << 8 | Buff[3];
-    value->ACCEL_ZOUT = Buff[4] << 8 | Buff[5];
-    raw               = Buff[6] << 8 | Buff[7];
-    value->TEMP_OUT   = (double)(raw - 1380) / 333.87 + 21;
-    value->GYRO_XOUT  = Buff[8] << 8 | Buff[9];
-    value->GYRO_YOUT  = Buff[10] << 8 | Buff[11];
-    value->GYRO_ZOUT  = Buff[12] << 8 | Buff[13];
-}
-
+/**
+ * @brief MPU6500,DMP初始化函数
+ * @return u8 返回初始化结果 返回0为初始化成功
+ */
 u8 MPU6500_DMP_Init(void)
 {
     struct int_param_s int_param;
@@ -292,42 +271,42 @@ u8 MPU6500_run_self_test(void)
         return 1;
 }
 
-/**********为了匿名四轴上位机的协议定义的变量****************************/
-// cup为小端模式存储，也就是在存储的时候，低位被存在0字节，高位在1字节
-#define BYTE0(dwTemp) (*(char *)(&dwTemp))       // 取出int型变量的低字节
-#define BYTE1(dwTemp) (*((char *)(&dwTemp) + 1)) //	取存储在此变量下一内存字节的内容，高字节
-#define BYTE2(dwTemp) (*((char *)(&dwTemp) + 2))
-#define BYTE3(dwTemp) (*((char *)(&dwTemp) + 3))
+// /**********为了匿名四轴上位机的协议定义的变量****************************/
+// // cup为小端模式存储，也就是在存储的时候，低位被存在0字节，高位在1字节
+// #define BYTE0(dwTemp) (*(char *)(&dwTemp))       // 取出int型变量的低字节
+// #define BYTE1(dwTemp) (*((char *)(&dwTemp) + 1)) //	取存储在此变量下一内存字节的内容，高字节
+// #define BYTE2(dwTemp) (*((char *)(&dwTemp) + 2))
+// #define BYTE3(dwTemp) (*((char *)(&dwTemp) + 3))
 
-u8 MPU6500_Send2Host(u16 ACCEL_XOUT, u16 ACCEL_YOUT, u16 ACCEL_ZOUT, u16 GYRO_XOUT, u16 GYRO_YOUT, u16 GYRO_ZOUT)
-{
-    u8 BUFF[40];
-    u8 sumcheck  = 0;
-    u8 addcheck  = 0;
-    u8 _cnt      = 0;
-    BUFF[_cnt++] = 0xAA;              // 帧头
-    BUFF[_cnt++] = 0xFF;              // 目标地址
-    BUFF[_cnt++] = 0XF1;              // 功能码
-    BUFF[_cnt++] = 12;                // 数据长度
-    BUFF[_cnt++] = BYTE0(ACCEL_XOUT); // 数据内容,小段模式，低位在前
-    BUFF[_cnt++] = BYTE1(ACCEL_XOUT); // 需要将字节进行拆分，调用上面的宏定义即可。
-    BUFF[_cnt++] = BYTE0(ACCEL_YOUT);
-    BUFF[_cnt++] = BYTE1(ACCEL_YOUT);
-    BUFF[_cnt++] = BYTE0(ACCEL_ZOUT);
-    BUFF[_cnt++] = BYTE1(ACCEL_ZOUT);
-    BUFF[_cnt++] = BYTE0(GYRO_XOUT);
-    BUFF[_cnt++] = BYTE1(GYRO_XOUT);
-    BUFF[_cnt++] = BYTE0(GYRO_YOUT);
-    BUFF[_cnt++] = BYTE1(GYRO_YOUT);
-    BUFF[_cnt++] = BYTE0(GYRO_ZOUT);
-    BUFF[_cnt++] = BYTE1(GYRO_ZOUT);
-    // SC和AC的校验直接抄最上面上面简介的即可
-    for (u8 i = 0; i < BUFF[3] + 4; i++) {
-        sumcheck += BUFF[i];
-        addcheck += sumcheck;
-    }
-    BUFF[_cnt++] = sumcheck;
-    BUFF[_cnt++] = addcheck;
+// u8 MPU6500_Send2Host(u16 ACCEL_XOUT, u16 ACCEL_YOUT, u16 ACCEL_ZOUT, u16 GYRO_XOUT, u16 GYRO_YOUT, u16 GYRO_ZOUT)
+// {
+//     u8 BUFF[40];
+//     u8 sumcheck  = 0;
+//     u8 addcheck  = 0;
+//     u8 _cnt      = 0;
+//     BUFF[_cnt++] = 0xAA;              // 帧头
+//     BUFF[_cnt++] = 0xFF;              // 目标地址
+//     BUFF[_cnt++] = 0XF1;              // 功能码
+//     BUFF[_cnt++] = 12;                // 数据长度
+//     BUFF[_cnt++] = BYTE0(ACCEL_XOUT); // 数据内容,小段模式，低位在前
+//     BUFF[_cnt++] = BYTE1(ACCEL_XOUT); // 需要将字节进行拆分，调用上面的宏定义即可。
+//     BUFF[_cnt++] = BYTE0(ACCEL_YOUT);
+//     BUFF[_cnt++] = BYTE1(ACCEL_YOUT);
+//     BUFF[_cnt++] = BYTE0(ACCEL_ZOUT);
+//     BUFF[_cnt++] = BYTE1(ACCEL_ZOUT);
+//     BUFF[_cnt++] = BYTE0(GYRO_XOUT);
+//     BUFF[_cnt++] = BYTE1(GYRO_XOUT);
+//     BUFF[_cnt++] = BYTE0(GYRO_YOUT);
+//     BUFF[_cnt++] = BYTE1(GYRO_YOUT);
+//     BUFF[_cnt++] = BYTE0(GYRO_ZOUT);
+//     BUFF[_cnt++] = BYTE1(GYRO_ZOUT);
+//     // SC和AC的校验直接抄最上面上面简介的即可
+//     for (u8 i = 0; i < BUFF[3] + 4; i++) {
+//         sumcheck += BUFF[i];
+//         addcheck += sumcheck;
+//     }
+//     BUFF[_cnt++] = sumcheck;
+//     BUFF[_cnt++] = addcheck;
 
-    return USART_Helper_SendLen(BUFF, _cnt);
-}
+//     return USART_Helper_SendLen(BUFF, _cnt);
+// }

@@ -27,11 +27,11 @@
       "excludeList": [
         "Hardware/MPU6500_driver/MPU6500_driver.c",
         "Software/Time_Helper/Time_Helper.c",
-        "Hardware/SPI_Helper/SPI_Helper.c",
         "Hardware/I2CHost/I2CHost.cpp",
-        "Hardware/I2C_Helper/tmp.c"
+        "Hardware/I2C_Helper/tmp.c",
+        "Hardware/SPI_Helper/SPI_Helper.c"
       ],
-      "toolchain": "AC5",
+      "toolchain": "AC6",
       "compileConfig": {
         "cpuType": "Cortex-M3",
         "floatingPointHardware": "none",

@@ -8,14 +8,10 @@
 
 #define USART_Helper_Baud 115200
 
-uint8_t USART_Helper_SendBuff[256];
 uint8_t USART_Helper_RcvBuff[256]; // 循环队列
-uint8_t USART_Helper_pSendBuff;
 uint8_t USART_Helper_pRcvBuff;
-uint8_t USART_Helper_DataReadyFlag = 0;
 
 u8 USART_Helper_GetRcvLen();
-u8 USART_Helper_TimeOutAssert(USART_TypeDef *USARTx, uint16_t USART_FLAG);
 void UASRT_Helper_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u32 BufferSize, u32 DIR, u32 MemoryBaseAddr, u32 Mode);
 
 u8 USART_Helper_Init()
