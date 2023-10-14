@@ -543,7 +543,6 @@ int dmp_set_orientation(unsigned short orient)
     /* Chip-to-body, axes only. */
     if (mpu_write_mem(FCFG_1, 3, gyro_regs))
         return -1;
-    Delay_us(10);
     if (mpu_write_mem(FCFG_2, 3, accel_regs))
         return -1;
 

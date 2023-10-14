@@ -40,16 +40,16 @@
 /***********以下为自己定义的系统平台，在STM32F103ZE上运行***************************/
 #if defined STM32F10X_MD // 在编译器中定义 STM32F10X_MD 则使用这段,以下的系统平台将不会用到
 
-#define MPU_Device_Adrr 0xD0 // 定义器件I2C地址,在定义变量st.hw.addr时用到
+#define MPU_Device_Adrr 0x68 // 定义器件I2C地址,在定义变量st.hw.addr时用到
 #include "mpu6500_driver.h"
 #include "delay.h"
 #include "timer.h"
 #include "stdio.h"
-#include "I2C_Helper.h"
+#include "I2C_DMA.h"
 #include "RTC_Helper.h"
-#define i2c_write I2C_Helper_Write_Len
-#define i2c_read  I2C_Helper_Read_Len
-#define delay_ms  Delay_ms
+#define i2c_write I2C_DMA_Write_Len
+#define i2c_read  I2C_DMA_Read_Len
+#define delay_ms  delay_ms
 #define get_ms    RTC_Helper_Getms
 // static inline int reg_int_cb(struct int_param_s *int_param)
 //{
@@ -813,19 +813,14 @@ int mpu_init(struct int_param_s *int_param)
 
     if (mpu_set_gyro_fsr(2000))
         return -1;
-    Delay_us(10);
     if (mpu_set_accel_fsr(2))
         return -1;
-    Delay_us(10);
     if (mpu_set_lpf(42))
         return -1;
-    Delay_us(10);
     if (mpu_set_sample_rate(50))
         return -1;
-    Delay_us(10);
     if (mpu_configure_fifo(0))
         return -1;
-    Delay_us(10);
 
     //    if (int_param)
     //        reg_int_cb(int_param);		//没用到这个函数
@@ -838,7 +833,6 @@ int mpu_init(struct int_param_s *int_param)
     /* Already disabled by setup_compass. */
     if (mpu_set_bypass(0))
         return -1;
-    Delay_us(10);
 #endif
 
     mpu_set_sensors(0);
@@ -860,7 +854,7 @@ int mpu_init(struct int_param_s *int_param)
  *                          accel mode.
  *  @return     0 if successful.
  */
-int mpu_lp_accel_mode(unsigned char rate)
+int mpu_lp_accel_mode(unsigned short rate)
 {
     unsigned char tmp[2];
 
@@ -1809,7 +1803,6 @@ int mpu_set_bypass(unsigned char bypass_on)
             tmp |= BIT_ACTL;
         if (st.chip_cfg.latched_int)
             tmp |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
-        delay_ms(10000);
         if (i2c_write(st.hw->addr, st.reg->int_pin_cfg, 1, &tmp))
             return -1;
     } else {
@@ -2297,7 +2290,6 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length,
 
     if (i2c_write(st.hw->addr, st.reg->bank_sel, 2, tmp))
         return -1;
-    Delay_ms(3);
     if (i2c_read(st.hw->addr, st.reg->mem_r_w, length, data))
         return -1;
     return 0;
@@ -2330,7 +2322,6 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
         this_write = min(LOAD_CHUNK, length - ii);
         if (mpu_write_mem(ii, this_write, (unsigned char *)&firmware[ii]))
             return -1;
-        Delay_us(10);
         if (mpu_read_mem(ii, this_write, cur))
             return -1;
         if (memcmp(firmware + ii, cur, this_write))
@@ -2618,7 +2609,7 @@ int mpu_get_compass_fsr(unsigned short *fsr)
  *  @return     0 if successful.
  */
 int mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
-                            unsigned char lpa_freq)
+                            unsigned short lpa_freq)
 {
     unsigned char data[3];
 

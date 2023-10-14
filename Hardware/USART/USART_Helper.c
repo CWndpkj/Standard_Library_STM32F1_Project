@@ -20,17 +20,17 @@ u8 USART_Helper_Init()
 
     // 开启时钟
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
     // 初始化GPIO
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.GPIO_Mode  = GPIO_Mode_AF_PP;
-    GPIO_InitStruct.GPIO_Pin   = GPIO_Pin_9;
+    GPIO_InitStruct.GPIO_Pin   = GPIO_Pin_2;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
     GPIO_InitStruct.GPIO_Mode  = GPIO_Mode_IPU;
-    GPIO_InitStruct.GPIO_Pin   = GPIO_Pin_10;
+    GPIO_InitStruct.GPIO_Pin   = GPIO_Pin_3;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
     // 初始化USART
@@ -41,28 +41,28 @@ u8 USART_Helper_Init()
     USART_InitStruct.USART_Parity              = USART_Parity_No;     // 奇偶校验
     USART_InitStruct.USART_StopBits            = USART_StopBits_1;    // 停止位
     USART_InitStruct.USART_WordLength          = USART_WordLength_8b; // 数据字长
-    USART_Init(USART1, &USART_InitStruct);
+    USART_Init(USART2, &USART_InitStruct);
     // 开启USART DMA
-    USART_DMACmd(USART1, USART_DMAReq_Rx | USART_DMAReq_Tx, ENABLE);
+    USART_DMACmd(USART2, USART_DMAReq_Rx | USART_DMAReq_Tx, ENABLE);
 
     // 开启USART 中断
-    USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
+    USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
 
     // 配置NVIC
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel                   = USART1_IRQn;
+    NVIC_InitStruct.NVIC_IRQChannel                   = USART2_IRQn;
     NVIC_InitStruct.NVIC_IRQChannelCmd                = ENABLE;
     NVIC_InitStruct.NVIC_IRQChannelPreemptionPriority = 2;
     NVIC_InitStruct.NVIC_IRQChannelSubPriority        = 2;
     NVIC_Init(&NVIC_InitStruct);
     // 使能USART
-    USART_Cmd(USART1, ENABLE);
+    USART_Cmd(USART2, ENABLE);
 
     // 初始化DMA
-    UASRT_Helper_DMAInit(DMA1_Channel5, 256, DMA_DIR_PeripheralSRC, (u32)USART_Helper_RcvBuff, DMA_Mode_Circular);
+    UASRT_Helper_DMAInit(DMA1_Channel6, 256, DMA_DIR_PeripheralSRC, (u32)USART_Helper_RcvBuff, DMA_Mode_Circular);
     // 开启DMA
-    DMA_Cmd(DMA1_Channel5, ENABLE);
+    DMA_Cmd(DMA1_Channel6, ENABLE);
 
     return 0;
 }
@@ -71,11 +71,9 @@ u8 USART_Helper_Init()
  * @brief USART中断句柄函数
  *
  */
-void USART1_IRQHandler(void)
+void USART2_IRQHandler(void)
 {
-    static u8 i = 0;
-    if (USART_GetITStatus(USART1, USART_IT_IDLE) == SET) {
-        printf("%d\t", i);
+    if (USART_GetITStatus(USART2, USART_IT_IDLE) == SET) {
         // USART主线空闲,此时对接收数据进行判定,查看是否接收到数据
         u8 length = USART_Helper_GetRcvLen();
         if (length != 0) {
@@ -86,11 +84,11 @@ void USART1_IRQHandler(void)
             for (u8 i = 0; i < length; i++) {
                 AnoPTv8HwRecvByte(USART_Helper_RcvBuff[USART_Helper_pRcvBuff++]);
             }
-            // note:注意查看参数! 不可通过以下方式清除IDLE,因为IDLE位为只读
-            // USART_ClearITPendingBit(USART1,USART_IT_IDLE); // 清除中断标志位
-            // 按照手册,读取SR寄存器,再读取DR寄存器,可清除   USART_IT_IDLE  标志位
-            USART1->DR; // 清除   USART_IT_IDLE  标志位
         }
+        // note:注意查看参数! 不可通过以下方式清除IDLE,因为IDLE位为只读
+        // USART_ClearITPendingBit(USART1,USART_IT_IDLE); // 清除中断标志位
+        // 按照手册,读取SR寄存器,再读取DR寄存器,可清除   USART_IT_IDLE  标志位
+        USART2->DR; // 清除   USART_IT_IDLE  标志位
     }
 }
 
@@ -105,18 +103,20 @@ void UASRT_Helper_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u32 BufferSize, u3
     DMA_InitSruct.DMA_MemoryDataSize     = DMA_MemoryDataSize_Byte; // 大小Byte
     DMA_InitSruct.DMA_MemoryInc          = DMA_MemoryInc_Enable;
     DMA_InitSruct.DMA_Mode               = Mode;
-    DMA_InitSruct.DMA_PeripheralBaseAddr = (uint32_t)&USART1->DR;
+    DMA_InitSruct.DMA_PeripheralBaseAddr = (uint32_t)&USART2->DR;
     DMA_InitSruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
     DMA_InitSruct.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
     DMA_InitSruct.DMA_Priority           = DMA_Priority_High;
     DMA_Init(DMAy_Channelx, &DMA_InitSruct);
+    // 开启DMA
+    DMA_Cmd(DMA1_Channel7, ENABLE);
 }
 
 u8 USART_Helper_SendByte(u8 Buff)
 {
     int32_t TimeOutErr = 10000;
-    USART_SendData(USART1, Buff);
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) != SET) {
+    USART_SendData(USART2, Buff);
+    while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) != SET) {
         TimeOutErr--;
         if (TimeOutErr == 0) {
             // TODO:错误处理
@@ -130,23 +130,21 @@ u8 USART_Helper_SendByte(u8 Buff)
 u8 USART_Helper_SendLen(uint8_t *pBuff, uint8_t length)
 {
     // 初始化DMA
-    UASRT_Helper_DMAInit(DMA1_Channel4, length, DMA_DIR_PeripheralDST, (u32)pBuff, DMA_Mode_Normal);
-    // 开启DMA
-    DMA_Cmd(DMA1_Channel4, ENABLE);
+    UASRT_Helper_DMAInit(DMA1_Channel7, length, DMA_DIR_PeripheralDST, (u32)pBuff, DMA_Mode_Normal);
     return 0;
+}
+
+u8 USART_Helper_GetRcvLen()
+{
+    int length = 256 - DMA_GetCurrDataCounter(DMA1_Channel6) - USART_Helper_pRcvBuff;
+    if (length < 0)
+        return 256 + length;
+    else
+        return length;
 }
 
 int fputc(int ch, FILE *f)
 {
     USART_Helper_SendByte((uint8_t)ch);
     return ch;
-}
-
-u8 USART_Helper_GetRcvLen()
-{
-    int length = 256 - DMA_GetCurrDataCounter(DMA1_Channel5) - USART_Helper_pRcvBuff;
-    if (length < 0)
-        return 256 + length;
-    else
-        return length;
 }

@@ -12,19 +12,27 @@
 #include "HWInterface.h"
 #include "AnoPTv8.h"
 #include "WS2812.h"
+#include "BMP280_Helper.h"
+#include "SPI_Helper.h"
 
 void HardWareInit()
 {
-    Delay_ms(500);
-    WS2812_Init();
+    delay_ms(500);
+    //  WS2812_Init();
     LED_Init();
     LED_Off();
     USART_Helper_Init();
-    // OLED_Init();
-    //  AHT20_Init();
-    //    RTC_Helper_Init();
+    OLED_Init();
+    // AHT20_Init();
+    //   RTC_Helper_Init();
     //   OLED_ShowNum(1,1,MPU6500_DMP_Init(),1);
-    //MPU6500_Init();
+    MPU6500_Init();
+
+    // BMP280_Init();
+
+    // printf("%s", "hello world");
+
+    SPI_Helper_Init();
 }
 
 uint8_t databuf[14];
@@ -50,54 +58,46 @@ int main()
 {
     HardWareInit();
     // AHT20_value AHT_value;
-    //  MPU6500_Value MPU_value;
-    //  MPU6500_StartAquire();
-    //  OLED_ShowString(1, 1, "hello world");
-//  u8 RGB_Data[48] ={
-//             255, 182, 193,
-//             255, 20, 147,
-//             255, 0, 255,
-//             0, 0, 255,
-//             30, 144, 255,
-//             0, 255, 255,
-//             0, 250, 154,
-//             50, 205, 50,
-//             255, 255, 0,
-//             255, 165, 0,
-//             255, 140, 0,
-//             255, 69, 0,
-//             250, 128, 114,
-//             255, 0, 0,
-//             128, 0, 0,
-//             255, 255, 255,
-//         };
-    //数据格式 GRB
-    u8 RGB_Data[48]={0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1};
-        WS2812_SetRGBData(RGB_Data);
+    //   MPU6500_Value MPU_value;
+    //   MPU6500_StartAquire();
+    // OLED_ShowString(1, 1, "hello world");
 
+    SPI_Helper_WriteLen(GPIO_Pin_6, 0x06, NULL, 0);
+    u8 ADDR[3] = {0x00, 0x00, 0x00};
+    SPI_Helper_WriteLen(GPIO_Pin_6, 0x02, ADDR, 3);
+    u8 Data[20] = {0x20, 0x80, 0x30};
+
+    u8 ReadCommend[3];
+    ReadCommend[0] = 0x00;
+    ReadCommend[1] = 0x00;
+    ReadCommend[2] = 0x00;
+    u8 Buff[20];
+    SPI_Helper_ReadLen(GPIO_Pin_6, 0x03, ReadCommend);
+    
+    OLED_ShowHexNum(3, 1, MPU6500_GetDeviceID(), 2);
     while (1) {
         // AnoPTv8HwTrigger1ms();
         //  OLED_ShowHexNum(2, 1, MPU6500_GetAddr(), 2);
         // OLED_ShowNum(2, 1, i++, 5);
-        //MPU6500_dmp_get_euler_angle(NULL, NULL, value, value + 1, value + 2);
-        //AnoPTv8TxFrameF1(value[0], value[1], value[2]);
-        //AnoPTv8HwTrigger1ms();
-        // printf("%s:%f\t\n", "pitch:", value[0]);
-        // printf("%s:%f\t\n", "roll:", value[1]);
-        // printf("%s:%f\t\n", "yaw:", value[2]);
+        MPU6500_dmp_get_euler_angle(NULL, NULL, value, value + 1, value + 2);
+        // AnoPTv8TxFrameF1(value[0], value[1], value[2]);
+        // AnoPTv8HwTrigger1ms();
+        printf("%s:%f\t\n", "pitch:", value[0]);
+        printf("%s:%f\t\n", "roll:", value[1]);
+        printf("%s:%f\t\n", "yaw:", value[2]);
 
         // AHT20_GetValue(&AHT_value);
-        //  MPU6500_GetValue(&MPU_value);
-        //  printf("%s", "湿度:");
-        //  printf("%f\t\n", AHT_value.Humidity);
-        //  printf("%s", "温度:");
-        //  printf("%f\t\n", AHT_value.Temperature);
-        //   printf("%s", "MPU输出:");
-        //   printf("%f\t\n", MPU6500_GetTemperature());
-        //  MPU6500_Send2Host(MPU_value.ACCEL_XOUT, MPU_value.ACCEL_YOUT, MPU_value.ACCEL_ZOUT,
-        //                  MPU_value.GYRO_XOUT, MPU_value.GYRO_YOUT, MPU_value.GYRO_ZOUT);
-        //  mpu_get_temperature(&temp, NULL);
-        //  OLED_ShowNum(2, 1, temp, 10);
+        //    MPU6500_GetValue(&MPU_value);
+        // printf("%s", "湿度:");
+        // printf("%f\n", AHT_value.Humidity);
+        // printf("%s", "温度:");
+        // printf("%f\n", AHT_value.Temperature);
+        //    printf("%s", "MPU输出:");
+        //    printf("%f\t\n", MPU6500_GetTemperature());
+        //   MPU6500_Send2Host(MPU_value.ACCEL_XOUT, MPU_value.ACCEL_YOUT, MPU_value.ACCEL_ZOUT,
+        //                   MPU_value.GYRO_XOUT, MPU_value.GYRO_YOUT, MPU_value.GYRO_ZOUT);
+        //   mpu_get_temperature(&temp, NULL);
+        //   OLED_ShowNum(2, 1, temp, 10);
 
         // Delay_ms(100);
         // u8 i = 0 - 1;
@@ -105,6 +105,6 @@ int main()
         // }
         LED_Turn();
 
-        Delay_ms(500);
+        delay_ms(300);
     }
 }

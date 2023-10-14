@@ -1,11 +1,11 @@
 #include "stm32f10x.h"
 #include "OLED_Font.h"
 #include "delay.h"
-#include "I2C_Helper.h"
+#include "I2C_DMA.h"
 /*引脚配置*/
 // #define OLED_W_SCL(x) GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction)(x))
 // #define OLED_W_SDA(x) GPIO_WriteBit(GPIOB, GPIO_Pin_13, (BitAction)(x))
-#define OLED_SLAVE_ADDR 0x78
+#define OLED_SLAVE_ADDR 0x3C
 /*引脚初始化*/
 void OLED_I2C_Init(void)
 {
@@ -19,7 +19,7 @@ void OLED_I2C_Init(void)
 
     // OLED_W_SCL(1);
     // OLED_W_SDA(1);
-    I2C_Helper_Init();
+    I2C_DMA_Init();
 }
 
 /**
@@ -77,7 +77,7 @@ void OLED_WriteCommand(uint8_t Command)
     // OLED_I2C_SendByte(Command);
     // OLED_I2C_Stop();
 
-    I2C_Helper_WriteByte(OLED_SLAVE_ADDR, 0x00, Command);
+    I2C_DMA_WriteByte(OLED_SLAVE_ADDR, 0x00, Command);
 }
 
 /**
@@ -93,7 +93,7 @@ void OLED_WriteData(uint8_t Data)
     // OLED_I2C_SendByte(Data);
     // OLED_I2C_Stop();
 
-    I2C_Helper_WriteByte(OLED_SLAVE_ADDR, 0x40, Data);
+    I2C_DMA_WriteByte(OLED_SLAVE_ADDR, 0x40, Data);
 }
 
 /**
@@ -299,6 +299,6 @@ void OLED_Init(void)
 
     // OLED_WriteCommand(0xAF); // 开启显示
 
-    I2C_Helper_Write_Len(OLED_SLAVE_ADDR,0x00,23,Command);
+    I2C_DMA_Write_Len(OLED_SLAVE_ADDR,0x00,23,Command);
     OLED_Clear(); // OLED清屏
 }

@@ -4,7 +4,7 @@
 #include "inv_mpu_dmp_motion_driver.h"
 #include "math_fun.h"
 #include "math.h"
-#include "I2C_Helper.h"
+#include "I2C_DMA.h"
 #include "delay.h"
 #include "USART_Helper.h"
 
@@ -47,7 +47,7 @@
 #define MPU6500_PWR_MGMT_1        0x6B
 #define MPU6500_PWR_MGMT_2        0x6C
 #define MPU6500_WHO_AM_I          0x75
-#define MPU6500_ADDR              0xD0
+#define MPU6500_ADDR              0x68
 
 //MPU输出速率(最大不超过200Hz)
 #define DEFAULT_MPU_HZ            100 // 100Hz
@@ -84,7 +84,7 @@ v'z  = {(r31  * vx) +( r32 * vy) +( r33 * vz)}
  */
 void MPU6500_Init()
 {
-    I2C_Helper_Init();
+    I2C_DMA_Init();
     MPU6500_DMP_Init();
 }
 
@@ -95,7 +95,7 @@ void MPU6500_Init()
 u8 MPU6500_GetDeviceID()
 {
     u8 Addr;
-    I2C_Helper_ReadByte(MPU6500_ADDR, MPU6500_WHO_AM_I, &Addr);
+    I2C_DMA_ReadByte(MPU6500_ADDR, MPU6500_WHO_AM_I, &Addr);
     return Addr;
 }
 
@@ -109,36 +109,26 @@ u8 MPU6500_DMP_Init(void)
     int result;
     result = mpu_init(&int_param);
     if (result) return 1;
-    Delay_ms(1);
     result = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL); // 设置所需要的传感器
     if (result) return 2;
-    Delay_ms(1);
     result = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL); // 设置FIFO
     if (result) return 3;
-    Delay_ms(1);
     result = mpu_set_sample_rate(DEFAULT_MPU_HZ); // 设置采样率
     if (result) return 4;
-    Delay_ms(1);
     result = dmp_load_motion_driver_firmware(); // 加载dmp固件
     if (result) return 5;
-    Delay_ms(1);
     result = dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_pdata.orientation)); // 设置陀螺仪方向
     if (result) return 6;
-    Delay_ms(1);
     result = dmp_enable_feature(DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT |
                                 DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_GYRO_CAL |
                                 DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_RAW_GYRO); // 设置dmp功能
     if (result) return 7;
-    Delay_ms(1);
     result = dmp_set_fifo_rate(DEFAULT_MPU_HZ); // 设置DMP输出速率(最大不超过200Hz)
     if (result) return 8;
-    Delay_ms(1);
     result = MPU6500_run_self_test(); // 自检
     if (result) return 9;
-    Delay_ms(1);
     result = mpu_set_dmp_state(1); // 使能DMP
     if (result) return 10;
-    Delay_ms(1);
     result = dmp_set_interrupt_mode(DMP_INT_CONTINUOUS); // 设置中断产生方式
     if (result) return 11;
     return 0;
@@ -193,7 +183,7 @@ u8 MPU6500_dmp_get_euler_angle(short *accel, short *gyro, float *pitch, float *r
 //     其他,设置失败
 u8 MPU6500_Set_Gyro_Fsr(u8 fsr)
 {
-    return I2C_Helper_WriteByte(0xD0, MPU6500_GYRO_CONFIG, fsr << 3); // 设置陀螺仪满量程范围
+    return I2C_DMA_WriteByte(0xD0, MPU6500_GYRO_CONFIG, fsr << 3); // 设置陀螺仪满量程范围
 }
 
 // 设置MPU6050加速度传感器满量程范围
@@ -202,7 +192,7 @@ u8 MPU6500_Set_Gyro_Fsr(u8 fsr)
 //     其他,设置失败
 u8 MPU6500_Set_Accel_Fsr(u8 fsr)
 {
-    return I2C_Helper_WriteByte(0xD0, MPU6500_ACCEL_CONFIG, fsr << 3); // 设置加速度传感器满量程范围
+    return I2C_DMA_WriteByte(0xD0, MPU6500_ACCEL_CONFIG, fsr << 3); // 设置加速度传感器满量程范围
 }
 
 // 设置MPU6050的采样率(假定Fs=1KHz)
@@ -215,7 +205,7 @@ u8 MPU6500_Set_Rate(u16 rate)
     if (rate > 1000) rate = 1000;
     if (rate < 4) rate = 4;
     data = 1000 / rate - 1;
-    data = I2C_Helper_WriteByte(0xD0, MPU6500_SMPLRT_DIV, data); // 设置数字低通滤波器
+    data = I2C_DMA_WriteByte(0xD0, MPU6500_SMPLRT_DIV, data); // 设置数字低通滤波器
     return MPU6500_Set_LPF(rate / 2);                            // 自动设置LPF为采样率的一半
 }
 
@@ -238,7 +228,7 @@ u8 MPU6500_Set_LPF(u16 lpf)
         data = 5;
     else
         data = 6;
-    return I2C_Helper_WriteByte(0xD0, MPU6500_CONFIG, data); // 设置数字低通滤波器
+    return I2C_DMA_WriteByte(0xD0, MPU6500_CONFIG, data); // 设置数字低通滤波器
 }
 
 // MPU6050自测试
