@@ -30,7 +30,8 @@
         "Hardware/I2CHost/I2CHost.cpp",
         "Hardware/I2C_Helper/tmp.c",
         "Hardware/Timer/Timer.c",
-        "Hardware/I2C_Helper/I2C_Helper.c"
+        "Hardware/I2C_Helper/I2C_Helper.c",
+        "Hardware/WS2812/WS2812.c"
       ],
       "toolchain": "AC5",
       "compileConfig": {
