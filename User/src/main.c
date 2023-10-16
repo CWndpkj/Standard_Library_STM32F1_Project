@@ -14,6 +14,8 @@
 #include "WS2812.h"
 #include "BMP280_Helper.h"
 #include "W25Qxx_Helper.h"
+#include "../Rsc/image_qq.h"
+
 void HardWareInit()
 {
     delay_ms(500);
@@ -55,11 +57,14 @@ float value[3];
 int main()
 {
     HardWareInit();
-    u8 ReadBuff[10]  = {0};
-    u8 WriteBuff[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
-    W25Qxx_Helper_Write(0x0, WriteBuff, 10);
-    W25Qxx_Helper_Read(0x0, ReadBuff, 10);
-    OLED_ShowHexNum(1, 1, ReadBuff[5], 2);
+    u8 ReadBuff[3200] = {0};
+    // u8 WriteBuff[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
+
+    // W25Qxx_Helper_Write(0x0, gImage_qq_logo, 3200);
+
+    W25Qxx_Helper_Write(0x00, gImage_qq_logo, 3200);
+    W25Qxx_Helper_Read(0x0, ReadBuff, 3200);
+    OLED_ShowHexNum(1, 1, ReadBuff[3199], 2);
 
     // AHT20_value AHT_value;
     //   MPU6500_Value MPU_value;

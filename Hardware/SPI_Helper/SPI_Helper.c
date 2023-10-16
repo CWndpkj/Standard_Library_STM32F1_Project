@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include "delay.h"
 
+#define TimeOut_Ratio 1
+
 u8 SPI_Helper_DMA2Send_Finish_Flag;
 u8 SPI_Helper_Rcv2DMA_Finish_Flag;
-int8_t SPI_Helper_WaitforFinish();
-int8_t SPI_Helper_TimeOutAssert(uint16_t SPI_I2S_FLAG, FlagStatus Status);
+int8_t SPI_Helper_WaitforFinish(u8 Flag, u16 nms);
+int8_t SPI_Helper_TimeOutAssert(uint16_t SPI_I2S_FLAG, FlagStatus Status, u16 nms);
 int8_t SPI_Helper_NVICInit();
 int8_t SPI_Helper_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u16 BufferSize, u32 Diraction, u8 *MemoryBaseAddr);
 
@@ -160,10 +162,9 @@ int8_t SPI_Helper_WriteLen(uint8_t *reg_data, uint16_t length)
     SPI_Helper_DMAInit(DMA1_Channel3, length, DMA_DIR_PeripheralDST, reg_data);
 
     // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(0);
+    SPI_Helper_WaitforFinish(0, TimeOut_Ratio * length + 1000);
     // // 等待最后一个数据发送完,也接收完
-    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET) ||
-              SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_BSY, RESET);
+    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET, 100);
 
     // 此处必须读取一下SPI的接收寄存器以清除RXNE标志位,
     // 否则在其他函数中一启用DMA就会立马转运一个数据过去导致出错
@@ -180,17 +181,17 @@ int8_t SPI_Helper_WriteLen(uint8_t *reg_data, uint16_t length)
 int8_t SPI_Helper_ReadLen(uint8_t *reg_data, uint16_t length)
 {
     int8_t ErrCode = 0;
-    // 必须向从设备发送数据才能产生时钟
-    u8 SendBuff[length];
-    for (u16 i = 0; i < length; i++) {
-        SendBuff[i] = 0xFF;
-    }
     // 初始化DMA
     SPI_Helper_DMAInit(DMA1_Channel2, length, DMA_DIR_PeripheralSRC, reg_data);
     // 发送缓冲数据产生时钟
-    SPI_Helper_WriteLen(SendBuff, length);
+    for (u16 i = 0; i < length; i++) {
+        SPI_I2S_SendData(SPI1, 0xFF);
+        // 等待发送完成
+        ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET, 100);
+    }
+
     // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(1);
+    ErrCode = SPI_Helper_WaitforFinish(1, 100);
 
     return ErrCode;
 }
@@ -202,11 +203,11 @@ uint8_t SPI_Helper_SwapLen(u8 *pSendBuff, u8 *pRcvBuff, u8 length)
     SPI_Helper_DMAInit(DMA1_Channel3, length, DMA_DIR_PeripheralDST, pSendBuff);
     SPI_Helper_DMAInit(DMA1_Channel2, length, DMA_DIR_PeripheralSRC, pRcvBuff);
     // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(0);
-    // // 等待最后一个数据发送完,也接收完
-    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET);
+    ErrCode = SPI_Helper_WaitforFinish(0, TimeOut_Ratio * length + 1000);
+    // 等待最后一个数据发送完,也接收完
+    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET, 100);
     // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(1);
+    ErrCode = SPI_Helper_WaitforFinish(1, 100);
 
     return ErrCode;
 }
@@ -214,40 +215,33 @@ uint8_t SPI_Helper_SwapLen(u8 *pSendBuff, u8 *pRcvBuff, u8 length)
 int8_t SPI_Helper_WriteThenRead(u8 *pSendBuff, u8 *pRcvBuff, u16 WriteLength, u16 ReadLength)
 {
     int8_t ErrCode = 0;
-    u8 SendBuff[WriteLength + ReadLength], RcvBuff[WriteLength + ReadLength];
-    // 复制内存
-    for (u16 i = 0; i < WriteLength; i++) {
-        SendBuff[i] = pSendBuff[i];
-    }
-    // 填充0xFF
-    for (u16 i = 0; i < ReadLength; i++) {
-        SendBuff[WriteLength + i] = 0xFF;
-    }
     // 开始发送
-    SPI_Helper_DMAInit(DMA1_Channel3, WriteLength + ReadLength, DMA_DIR_PeripheralDST, SendBuff);
-    SPI_Helper_DMAInit(DMA1_Channel2, WriteLength + ReadLength, DMA_DIR_PeripheralSRC, RcvBuff);
+    SPI_Helper_DMAInit(DMA1_Channel3, WriteLength, DMA_DIR_PeripheralDST, pSendBuff);
     // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(0);
-    // 等待最后一个数据发送完,也接收完
-    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET) ||
-              SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_BSY, RESET) ||
-              SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_RXNE, RESET);
-    // 等待DMA传输完成
-    SPI_Helper_WaitforFinish(1);
+    ErrCode = SPI_Helper_WaitforFinish(0, TimeOut_Ratio * WriteLength + 1000);
+    ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET, 100);
 
-    // 复制内存
+    // 先初始化好DMA
+    SPI_Helper_DMAInit(DMA1_Channel2, ReadLength, DMA_DIR_PeripheralSRC, pRcvBuff);
+    // 发送填充产生时钟
     for (u16 i = 0; i < ReadLength; i++) {
-        pRcvBuff[i] = RcvBuff[WriteLength + i];
+        SPI_I2S_SendData(SPI1, 0xFF);
+        // 等待数据发送完成
+        ErrCode = SPI_Helper_TimeOutAssert(SPI_I2S_FLAG_TXE, SET, 100);
     }
+    // 等待DMA传输完成
+    ErrCode = SPI_Helper_WaitforFinish(1, 100);
+
     return ErrCode;
 }
 
-int8_t SPI_Helper_TimeOutAssert(uint16_t SPI_I2S_FLAG, FlagStatus Status)
+int8_t SPI_Helper_TimeOutAssert(uint16_t SPI_I2S_FLAG, FlagStatus Status, u16 nms)
 {
-    u16 TimeOut = 10000;
+    u16 TimeOut = nms;
     u8 err      = 0;
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG) != Status) {
         TimeOut--;
+        delay_ms(1);
         if (TimeOut == 0) {
             // TODO:错误处理
             LED_On();
@@ -258,9 +252,9 @@ int8_t SPI_Helper_TimeOutAssert(uint16_t SPI_I2S_FLAG, FlagStatus Status)
     return err;
 }
 
-int8_t SPI_Helper_WaitforFinish(u8 Flag)
+int8_t SPI_Helper_WaitforFinish(u8 Flag, u16 nms)
 {
-    u16 TimeOut = 1000;
+    u16 TimeOut = nms;
     u8 err      = 0;
     if (Flag == 0) {
         while (SPI_Helper_DMA2Send_Finish_Flag != 1) {

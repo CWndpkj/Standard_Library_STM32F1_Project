@@ -83,11 +83,6 @@ void DMA1_Channel4_IRQHandler()
         // 置完成标志位
         I2C_DMA_Transfer_Finish_Flag = 1;
 
-        // 判断传输完成标志位
-        I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED);
-        // 产生结束信号
-        I2C_GenerateSTOP(I2C2, ENABLE);
-
         DMA_ClearITPendingBit(DMA1_IT_TC4);
     }
 }
@@ -99,13 +94,11 @@ void DMA1_Channel4_IRQHandler()
 void DMA1_Channel5_IRQHandler()
 {
     if (DMA_GetITStatus(DMA1_IT_TC5) == SET) {
+        // 关闭I2C在DMA传输完成后自动产生停止条件
         I2C_DMALastTransferCmd(I2C2, DISABLE);
 
         // 置完成标志位
         I2C_DMA_Transfer_Finish_Flag = 1;
-
-        // 产生结束信号
-        I2C_GenerateSTOP(I2C2, ENABLE);
 
         DMA_ClearITPendingBit(DMA1_IT_TC5);
     }
@@ -166,7 +159,7 @@ u8 I2C_DMA_WriteByte(u8 DeviceAddr, u8 RegAddr, u8 Buff)
         return 1;
     }
 
-    I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Transmitter);
+    I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Transmitter);
     if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
         I2C_GenerateSTOP(I2C2, ENABLE);
         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
@@ -203,7 +196,7 @@ u8 I2C_DMA_Write_Len(u8 DeviceAddr, u8 RegAddr, u32 length, u8 *pBuff)
         return 2;
     }
 
-    I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Transmitter);
+    I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Transmitter);
     if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
         I2C_GenerateSTOP(I2C2, ENABLE);
         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
@@ -228,8 +221,21 @@ u8 I2C_DMA_Write_Len(u8 DeviceAddr, u8 RegAddr, u32 length, u8 *pBuff)
 
     // 改为DMA
     I2C_DMA_DMAInit(DMA1_Channel4, length, DMA_DIR_PeripheralDST, (u32)pBuff, DMA_Priority_VeryHigh);
+    // 等待DMA传输完成
+    I2C_DMA_WaitforFinish();
 
-    return I2C_DMA_WaitforFinish();
+    // 等待数据发送完成
+    //  判断传输完成标志位
+    if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
+        I2C_GenerateSTOP(I2C2, ENABLE);
+        I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
+        return 5;
+    }
+
+    // 产生结束信号
+    I2C_GenerateSTOP(I2C2, ENABLE);
+
+    return 0;
 }
 
 void I2C_DMA_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u32 BufferSize, u32 DIR, u32 MemoryBaseAddr, u32 Priority)
@@ -262,7 +268,7 @@ u8 I2C_DMA_ReadByte(u8 DeviceAddr, u8 RegAddr, u8 *pBuff)
 
         return 1;
     }
-    I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Transmitter);
+    I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Transmitter);
     if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
         I2C_GenerateSTOP(I2C2, ENABLE);
         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
@@ -283,7 +289,7 @@ u8 I2C_DMA_ReadByte(u8 DeviceAddr, u8 RegAddr, u8 *pBuff)
         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
         return 4;
     }
-    I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Receiver);
+    I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Receiver);
     if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
         I2C_GenerateSTOP(I2C2, ENABLE);
         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
@@ -316,7 +322,7 @@ u8 I2C_DMA_Read_Len(u8 DeviceAddr, u8 RegAddr, u32 length, u8 *pBuff)
             I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
             return 2;
         }
-        I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Transmitter);
+        I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Transmitter);
         if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
             I2C_GenerateSTOP(I2C2, ENABLE);
             I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
@@ -337,25 +343,12 @@ u8 I2C_DMA_Read_Len(u8 DeviceAddr, u8 RegAddr, u32 length, u8 *pBuff)
             return 5;
         }
 
-        I2C_Send7bitAddress(I2C2, DeviceAddr<<1, I2C_Direction_Receiver);
+        I2C_Send7bitAddress(I2C2, DeviceAddr << 1, I2C_Direction_Receiver);
         if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
             I2C_GenerateSTOP(I2C2, ENABLE);
             I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
             return 6;
         }
-
-        // for (u16 i = 0; i < length; i++) {
-        //     if (I2C_DMA_TimeOutAssert(I2C2, I2C_EVENT_MASTER_BYTE_RECEIVED)) {
-        //         I2C_GenerateSTOP(I2C2, ENABLE);
-        //         I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
-        //         return 6;
-        //     }
-        //     pBuff[i] = I2C_ReceiveData(I2C2);
-        //     if (i == length - 2) {
-        //         I2C_AcknowledgeConfig(I2C2, DISABLE);
-        //         I2C_GenerateSTOP(I2C2, ENABLE);
-        //     }
-        // }
 
         // 改为DMA
         // 开启DMA接收完成最后一个字节后自动发送非应答信号
@@ -363,9 +356,15 @@ u8 I2C_DMA_Read_Len(u8 DeviceAddr, u8 RegAddr, u32 length, u8 *pBuff)
 
         I2C_DMA_DMAInit(DMA1_Channel5, length, DMA_DIR_PeripheralSRC, (u32)pBuff, DMA_Priority_High);
 
-        return I2C_DMA_WaitforFinish();
+        // 等待DMA传输完成
+        if (I2C_DMA_WaitforFinish()) {
+            I2C_ClearFlag(I2C2, I2C_FLAG_SMBALERT | I2C_FLAG_TIMEOUT | I2C_FLAG_PECERR | I2C_FLAG_OVR | I2C_FLAG_AF | I2C_FLAG_ARLO | I2C_FLAG_BERR);
+            return 7;
+        }
 
-        // I2C_AcknowledgeConfig(I2C2, ENABLE);
+        I2C_GenerateSTOP(I2C2, ENABLE);
+
+        return 0;
     }
 }
 
