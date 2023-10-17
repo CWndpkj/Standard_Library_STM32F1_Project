@@ -15,6 +15,9 @@
 #include "BMP280_Helper.h"
 #include "W25Qxx_Helper.h"
 #include "../Rsc/image_qq.h"
+#include "test.h"
+#include "lcd.h"
+#include "GUI.h"
 
 void HardWareInit()
 {
@@ -24,15 +27,16 @@ void HardWareInit()
     LED_Off();
     USART_Helper_Init();
     OLED_Init();
-    // AHT20_Init();
-    //   RTC_Helper_Init();
-    //   OLED_ShowNum(1,1,MPU6500_DMP_Init(),1);
-    // MPU6500_Init();
+    LCD_Init();
+    //  AHT20_Init();
+    //    RTC_Helper_Init();
+    //    OLED_ShowNum(1,1,MPU6500_DMP_Init(),1);
+    //  MPU6500_Init();
 
     // BMP280_Init();
 
     // printf("%s", "hello world");
-    W25Qxx_Helper_Init();
+    //W25Qxx_Helper_Init();
 }
 
 uint8_t databuf[14];
@@ -57,19 +61,21 @@ float value[3];
 int main()
 {
     HardWareInit();
-    u8 ReadBuff[3200] = {0};
-    // u8 WriteBuff[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
+    //LCD_DrawFillRectangle(0, 0, 50, 50);
+    Gui_Drawbmp16(0, 0, gImage_qq_logo);
+
+    // u8 ReadBuff[3200] = {0};
+    //   u8 WriteBuff[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
 
     // W25Qxx_Helper_Write(0x0, gImage_qq_logo, 3200);
 
-    W25Qxx_Helper_Write(0x00, gImage_qq_logo, 3200);
-    W25Qxx_Helper_Read(0x0, ReadBuff, 3200);
-    OLED_ShowHexNum(1, 1, ReadBuff[3199], 2);
-
-    // AHT20_value AHT_value;
-    //   MPU6500_Value MPU_value;
-    //   MPU6500_StartAquire();
-    // OLED_ShowString(1, 1, "hello world");
+    // W25Qxx_Helper_Read(0x0, ReadBuff, 3200);
+    // OLED_ShowHexNum(1, 1, ReadBuff[3199], 2);
+    //  Touch_Test();
+    //   AHT20_value AHT_value;
+    //     MPU6500_Value MPU_value;
+    //     MPU6500_StartAquire();
+    //   OLED_ShowString(1, 1, "hello world");
 
     // SPI_Helper_WriteLen( 0x06, NULL, 0);
     // u8 ADDR[3] = {0x00, 0x00, 0x00};
@@ -84,6 +90,7 @@ int main()
     // SPI_Helper_ReadLen(GPIO_Pin_6, 0x03, ReadCommend,);
 
     // OLED_ShowHexNum(3, 1, MPU6500_GetDeviceID(), 2);
+
     while (1) {
         // AnoPTv8HwTrigger1ms();
         //  OLED_ShowHexNum(2, 1, MPU6500_GetAddr(), 2);

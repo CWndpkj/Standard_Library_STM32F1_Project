@@ -51,18 +51,14 @@ int8_t W25Qxx_Helper_DisableWrite()
 {
     int8_t ErrCode = 0;
     u8 Command     = 0x04;
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
-    ErrCode = SPI_Helper_WriteLen(&Command, 1);
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
+    ErrCode        = SPI_Helper_WriteByte(Command);
     return ErrCode;
 }
 int8_t W25Qxx_Helper_EnableWrite()
 {
     int8_t ErrCode = 0;
     u8 Command     = 0x06;
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
-    ErrCode = SPI_Helper_WriteLen(&Command, 1);
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
+    ErrCode        = SPI_Helper_WriteByte(Command);
     return ErrCode;
 }
 u8 W25Qxx_ReadStatusReg(u8 reg_ID)
@@ -83,9 +79,7 @@ u8 W25Qxx_ReadStatusReg(u8 reg_ID)
             Command = 0x05;
             break;
     }
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
-    SPI_Helper_WriteThenRead(&Command, &RcvBuff, 1, 1);
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
+    SPI_Helper_WriteThenRead(&Command, 1, &RcvBuff, 1);
     return RcvBuff;
 }
 int8_t W25Qxx_Helper_Read(u32 reg_addr, u8 *pBuff, u16 length)
@@ -93,7 +87,6 @@ int8_t W25Qxx_Helper_Read(u32 reg_addr, u8 *pBuff, u16 length)
     int8_t ErrCode = 0;
     u8 Command[5];
 
-    // 等待Busy为0
     Command[0] = 0x03;
     if (W25Qxx_Type == W25Q256) {
         Command[1] = (reg_addr >> 24) & 0xFF;
@@ -106,17 +99,12 @@ int8_t W25Qxx_Helper_Read(u32 reg_addr, u8 *pBuff, u16 length)
         Command[3] = reg_addr & 0xFF;
     }
 
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
     if (W25Qxx_Type == W25Q256) {
-        if (SPI_Helper_WriteLen(Command, 5))
-            ErrCode = 1;
+        ErrCode = SPI_Helper_WriteThenRead(Command, 5, pBuff, length);
     } else {
-        if (SPI_Helper_WriteLen(Command, 4))
-            ErrCode = 1;
+        ErrCode = SPI_Helper_WriteThenRead(Command, 4, pBuff, length);
     }
-    if (SPI_Helper_ReadLen(pBuff, length))
-        ErrCode = 2;
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
+
     return ErrCode;
 }
 
@@ -124,9 +112,7 @@ int8_t W25Qxx_Erase(u32 reg_addr)
 {
     u8 ErrCode = 0;
     u8 Command[4];
-
     Command[0] = 0x20;
-
     if (W25Qxx_Type == W25Q256)
         for (u8 i = 0; i < 4; i++) {
             Command[i + 1] = reg_addr & ((u32)0xFF000000 >> i * 8);
@@ -139,16 +125,12 @@ int8_t W25Qxx_Erase(u32 reg_addr)
     // 使能写
     W25Qxx_Helper_EnableWrite();
 
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
     if (W25Qxx_Type == W25Q256) {
-        if (SPI_Helper_WriteLen(Command, 5))
-            ErrCode = 1;
+        ErrCode = SPI_Helper_WriteLen(Command, 5);
     } else {
-        if (SPI_Helper_WriteLen(Command, 4))
-            ErrCode = 1;
+        ErrCode = SPI_Helper_WriteLen(Command, 4);
     }
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
-    //擦除时间不大于400ms
+    // 擦除1sector时间不大于400ms
     W25Qxx_WaitForBusy(1000);
     // 失能写
     W25Qxx_Helper_DisableWrite();
@@ -202,18 +184,6 @@ int8_t W25Qxx_Helper_Write(u32 reg_addr, u8 *pBuff, int32_t length)
             reg_addr += 256;
             pBuff += 256;
         }
-
-        // while (length > 0) {
-        //     ErrCode = W25Qxx_WritePage((block << 16 | sector << 12 | page), pBuff + (256 - page), 256);
-        //     page    = 0;
-        //     sector += 1;
-        //     if (sector == 16) {
-        //         sector = 0;
-        //         block += 1;
-        //     }
-        //     ErrCode = W25Qxx_WritePage((block << 16 | sector << 12 | page), pBuff + (256 - page), 256);
-        //     length -= 256;
-        // }
     }
 
     return ErrCode;
@@ -245,14 +215,12 @@ uint8_t W25Qxx_WritePage(u32 reg_addr, u8 *pBuff, u16 length)
 
     // 开启写使能
     W25Qxx_Helper_EnableWrite();
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
     if (W25Qxx_Type == W25Q256) {
-        ErrCode = SPI_Helper_WriteLen(Command, 5);
+        ErrCode = SPI_Helper_WriteCommand_Data(Command, 5, pBuff, length);
+
     } else {
-        ErrCode = SPI_Helper_WriteLen(Command, 4);
+        ErrCode = SPI_Helper_WriteCommand_Data(Command, 4, pBuff, length);
     }
-    SPI_Helper_WriteLen(pBuff, length);
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
     W25Qxx_WaitForBusy(1000);
     // 关闭写使能
     W25Qxx_Helper_DisableWrite();
@@ -263,9 +231,7 @@ u8 W25Qxx_ReadDeviceID()
 {
     u8 Command[4] = {0xAB, 0xFF, 0xFF, 0xFF};
     u8 RcvBuff;
-    SPI_Helper_Start(W25Qxx_Cs_Pin);
-    SPI_Helper_WriteThenRead(Command, &RcvBuff, 4, 1);
-    SPI_Helper_Stop(W25Qxx_Cs_Pin);
+    SPI_Helper_WriteThenRead(Command, 4, &RcvBuff, 1);
     return RcvBuff;
 }
 
