@@ -58,10 +58,8 @@ extern _m_tp_dev tp_dev; // 触屏控制器在touch.c里面定义
 
 // 与触摸屏芯片连接引脚
 // 与触摸屏芯片连接引脚
-#define PEN  GPIO_Pin_9  // PA9  INT
-#define TCS  GPIO_Pin_3 // PB10 CS
-
-
+#define PEN  GPIO_Pin_9  // PB9  INT
+#define TCS  GPIO_Pin_8 // PB8 CS
 
 void TP_Write_Byte(u8 num);                        // 向控制芯片写入一个数据
 u16 TP_Read_AD(u8 CMD);                            // 读取AD转换值

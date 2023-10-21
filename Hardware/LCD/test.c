@@ -18,7 +18,7 @@ u16 ColorTab[5] = {RED, GREEN, BLUE, YELLOW, BRED}; //???????????
  * @parameters :str:the start address of the Chinese and English strings
  * @retvalue   :None
  ******************************************************************************/
-void DrawTestPage(u8 *str)
+void DrawTestPage(const char *str)
 {
     //????????up
     LCD_Clear(WHITE);
@@ -220,7 +220,7 @@ void Pic_test(void)
 void Rotate_Test(void)
 {
     u8 i             = 0;
-    u8 *Direction[4] = {"Rotation:0", "Rotation:90", "Rotation:180", "Rotation:270"};
+    const char *Direction[4] = {"Rotation:0", "Rotation:90", "Rotation:180", "Rotation:270"};
 
     for (i = 0; i < 4; i++) {
         LCD_direction(i);

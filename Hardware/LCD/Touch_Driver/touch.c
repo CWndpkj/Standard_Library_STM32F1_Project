@@ -3,11 +3,13 @@
 #include "delay.h"
 #include "stdlib.h"
 #include "math.h"
-// #include "24cxx.h"
 #include "gui.h"
 #include "SPI_Helper.h"
 #include "W25Qxx_Helper.h"
+#include <stdio.h>
 
+SPI_Helper SPI_TP(TCS);
+W25Qxx_Helper W25Q64_INI(GPIO_Pin_7);
 _m_tp_dev tp_dev =
     {
         TP_Init,
@@ -37,18 +39,7 @@ u8 CMD_RDY = 0X90;
  ******************************************************************************/
 void TP_Write_Byte(u8 num)
 {
-    // u8 count = 0;
-    // for (count = 0; count < 8; count++) {
-    //     if (num & 0x80)
-    //         TDIN = 1;
-    //     else
-    //         TDIN = 0;
-    //     num <<= 1;
-    //     TCLK = 0;
-    //     TCLK = 1; // 上升沿有效
-    // }
-
-    SPI_Helper_WriteByte(num);
+    SPI_TP.WriteByte(num);
 }
 
 /*****************************************************************************
@@ -60,32 +51,10 @@ void TP_Write_Byte(u8 num)
  ******************************************************************************/
 u16 TP_Read_AD(u8 CMD)
 {
-    // u8 count = 0;
-    // u16 Num  = 0;
-    // TCLK     = 0;       // 先拉低时钟
-    // TDIN     = 0;       // 拉低数据线
-    // TCS      = 0;       // 选中触摸屏IC
-    // TP_Write_Byte(CMD); // 发送命令字
-    // delay_us(6);        // ADS7846的转换时间最长为6us
-    // TCLK = 0;
-    // delay_us(1);
-    // TCLK = 1; // 给1个时钟，清除BUSY
-    // TCLK = 0;
-    // for (count = 0; count < 16; count++) // 读出16位数据,只有高12位有效
-    // {
-    //     Num <<= 1;
-    //     TCLK = 0; // 下降沿有效
-    //     TCLK = 1;
-    //     if (DOUT) Num++;
-    // }
-    // Num >>= 4; // 只有高12位有效.
-    // TCS = 1;   // 释放片选
-    // return (Num);
-
     u16 Num = 0;
-    SPI_Helper_WriteByte(CMD);
-    delay_us(6); // ADS7846的转换时间最长为6us
-    SPI_Helper_ReadLen((u8*)&Num, 2);
+    u8 Buff[2];
+    SPI_TP.WriteThenRead(&CMD, 1, Buff, 2);
+    Num = Buff[0] << 8 | Buff[1];
     Num >>= 4;
     return (Num);
 }
@@ -229,7 +198,7 @@ void TP_Draw_Big_Point(u16 x, u16 y, u16 color)
 ******************************************************************************/
 u8 TP_Scan(u8 tp)
 {
-    if (PEN == 0) // 有按键按下
+    if (GPIO_ReadInputDataBit(GPIOB, PEN) == 0) // 有按键按下
     {
         if (tp)
             TP_Read_XY2(&tp_dev.x, &tp_dev.y);      // 读取物理坐标
@@ -299,7 +268,7 @@ void TP_Save_Adjdata(void)
     data.xoff          = tp_dev.xoff;
     data.yoff          = tp_dev.yoff;
     data.is_calibrated = 0x0A;
-    W25Qxx_Helper_Write(SAVE_ADDR_BASE, (u8 *)&data, 14);
+    W25Q64_INI.Write(SAVE_ADDR_BASE, (u8 *)&data, 14);
 }
 
 /*****************************************************************************
@@ -314,24 +283,24 @@ u8 TP_Get_Adjdata(void)
 {
     s32 tempfac;
     // tempfac = AT24CXX_ReadOneByte(SAVE_ADDR_BASE + 13); // 读取标记字,看是否校准过！
-    W25Qxx_Helper_Read(SAVE_ADDR_BASE + 13, (u8*)&tempfac, 1);
+    W25Q64_INI.Read(SAVE_ADDR_BASE + 13, (u8 *)&tempfac, 1);
     if (tempfac == 0X0A) // 触摸屏已经校准过了
     {
         // tempfac     = AT24CXX_ReadLenByte(SAVE_ADDR_BASE, 4);
-        W25Qxx_Helper_Read(SAVE_ADDR_BASE,(u8*) &tempfac, 4);
+        W25Q64_INI.Read(SAVE_ADDR_BASE, (u8 *)&tempfac, 4);
         tp_dev.xfac = (float)tempfac / 100000000; // 得到x校准参数
         // tempfac     = AT24CXX_ReadLenByte(SAVE_ADDR_BASE + 4, 4);
-        W25Qxx_Helper_Read(SAVE_ADDR_BASE + 4, (u8*)&tempfac, 4);
+        W25Q64_INI.Read(SAVE_ADDR_BASE + 4, (u8 *)&tempfac, 4);
         tp_dev.yfac = (float)tempfac / 100000000; // 得到y校准参数
                                                   // 得到x偏移量
                                                   // tp_dev.xoff = AT24CXX_ReadLenByte(SAVE_ADDR_BASE + 8, 2);
-        W25Qxx_Helper_Read(SAVE_ADDR_BASE + 8, (u8 *)&(tp_dev.xoff), 2);
+        W25Q64_INI.Read(SAVE_ADDR_BASE + 8, (u8 *)&(tp_dev.xoff), 2);
         // 得到y偏移量
         // tp_dev.yoff      = AT24CXX_ReadLenByte(SAVE_ADDR_BASE + 10, 2);
-        W25Qxx_Helper_Read(SAVE_ADDR_BASE + 10, (u8 *)&(tp_dev.yoff), 2);
+        W25Q64_INI.Read(SAVE_ADDR_BASE + 10, (u8 *)&(tp_dev.yoff), 2);
         // 读取触屏类型标记
         // tp_dev.touchtype = AT24CXX_ReadOneByte(SAVE_ADDR_BASE + 12);
-        W25Qxx_Helper_Read(SAVE_ADDR_BASE + 12, (u8 *)&(tp_dev.touchtype), 2);
+        W25Q64_INI.Read(SAVE_ADDR_BASE + 12, (u8 *)&(tp_dev.touchtype), 2);
         if (tp_dev.touchtype) // X,Y方向与屏幕相反
         {
             CMD_RDX = 0X90;
@@ -347,7 +316,7 @@ u8 TP_Get_Adjdata(void)
 }
 
 // 提示字符串
-const u8 *TP_REMIND_MSG_TBL = "Please use the stylus click the cross on the screen.The cross will always move until the screen adjustment is completed.";
+const char *TP_REMIND_MSG_TBL = "Please use the stylus click the cross on the screen.The cross will always move until the screen adjustment is completed.";
 
 /*****************************************************************************
  * @name       :void TP_Adj_Info_Show(u16 x0,u16 y0,u16 x1,u16 y1,u16 x2,u16 y2,u16 x3,u16 y3,u16 fac)
@@ -448,13 +417,13 @@ void TP_Adjust(void)
                     tem2 = abs(pos_temp[0][1] - pos_temp[1][1]); // y1-y2
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d1 = sqrt(tem1 + tem2); // 得到1,2的距离
+                    d1 = sqrt((float)tem1 + (float)tem2); // 得到1,2的距离
 
                     tem1 = abs(pos_temp[2][0] - pos_temp[3][0]); // x3-x4
                     tem2 = abs(pos_temp[2][1] - pos_temp[3][1]); // y3-y4
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d2  = sqrt(tem1 + tem2); // 得到3,4的距离
+                    d2  = sqrt((float)tem1 + (float)tem2); // 得到3,4的距离
                     fac = (float)d1 / d2;
                     if (fac < 0.95 || fac > 1.05 || d1 == 0 || d2 == 0) // 不合格
                     {
@@ -468,13 +437,13 @@ void TP_Adjust(void)
                     tem2 = abs(pos_temp[0][1] - pos_temp[2][1]); // y1-y3
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d1 = sqrt(tem1 + tem2); // 得到1,3的距离
+                    d1 = sqrt((float)tem1 + (float)tem2); // 得到1,3的距离
 
                     tem1 = abs(pos_temp[1][0] - pos_temp[3][0]); // x2-x4
                     tem2 = abs(pos_temp[1][1] - pos_temp[3][1]); // y2-y4
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d2  = sqrt(tem1 + tem2); // 得到2,4的距离
+                    d2  = sqrt((float)tem1 + (float)tem2); // 得到2,4的距离
                     fac = (float)d1 / d2;
                     if (fac < 0.95 || fac > 1.05) // 不合格
                     {
@@ -490,13 +459,13 @@ void TP_Adjust(void)
                     tem2 = abs(pos_temp[1][1] - pos_temp[2][1]); // y1-y3
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d1 = sqrt(tem1 + tem2); // 得到1,4的距离
+                    d1 = sqrt((float)tem1 + (float)tem2); // 得到1,4的距离
 
                     tem1 = abs(pos_temp[0][0] - pos_temp[3][0]); // x2-x4
                     tem2 = abs(pos_temp[0][1] - pos_temp[3][1]); // y2-y4
                     tem1 *= tem1;
                     tem2 *= tem2;
-                    d2  = sqrt(tem1 + tem2); // 得到2,3的距离
+                    d2  = sqrt((float)tem1 + (float)tem2); // 得到2,3的距离
                     fac = (float)d1 / d2;
                     if (fac < 0.95 || fac > 1.05) // 不合格
                     {
@@ -558,9 +527,9 @@ void TP_Adjust(void)
 ******************************************************************************/
 u8 TP_Init(void)
 {
-    SPI_Helper_Init(TCS);
-    W25Qxx_Helper_Init();
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
+    SPI_TP.Init();
+    W25Q64_INI.Init();
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_InitStructure.GPIO_Pin  = PEN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // 上拉输入

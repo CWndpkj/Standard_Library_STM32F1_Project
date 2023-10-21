@@ -9,8 +9,9 @@
     "c/cpp-compiler": {
         "optimization": "level-balanced",
         "language-c": "c11",
-        "language-cpp": "c++11",
-        "warnings": "ac5-like-warnings"
+        "language-cpp": "c++14",
+        "warnings": "ac5-like-warnings",
+        "misc-controls": "-xc++ -std=c++17"
     },
     "asm-compiler": {
         "$use": "asm-auto"

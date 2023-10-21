@@ -1,42 +1,8 @@
-/****************************************************************************************************
-//=========================================电源接线================================================//
-//     LCD模块                STM32单片机
-//      VCC          接        DC5V/3.3V      //电源
-//      GND          接          GND          //电源地
-//=======================================液晶屏数据线接线==========================================//
-//本模块默认数据总线类型为SPI总线
-//     LCD模块                STM32单片机
-//    SDI(MOSI)      接          PB15         //液晶屏SPI总线数据写信号
-//    SDO(MISO)      接          PB14         //液晶屏SPI总线数据读信号，如果不需要读，可以不接线
-//=======================================液晶屏控制线接线==========================================//
-//     LCD模块 					      STM32单片机
-//       LED         接          PB9          //液晶屏背光控制信号，如果不需要控制，接5V或3.3V
-//       SCK         接          PB13         //液晶屏SPI总线时钟信号
-//      DC/RS        接          PB10         //液晶屏数据/命令控制信号
-//       RST         接          PB12         //液晶屏复位控制信号
-//       CS          接          PB11         //液晶屏片选控制信号
-//=========================================触摸屏触接线=========================================//
-//如果模块不带触摸功能或者带有触摸功能，但是不需要触摸功能，则不需要进行触摸屏接线
-//	   LCD模块                STM32单片机
-//      T_IRQ        接          PC10         //触摸屏触摸中断信号
-//      T_DO         接          PC2          //触摸屏SPI总线读信号
-//      T_DIN        接          PC3          //触摸屏SPI总线写信号
-//      T_CS         接          PC13         //触摸屏片选控制信号
-//      T_CLK        接          PC0          //触摸屏SPI总线时钟信号
-**************************************************************************************************/
-/* @attention
- *
- * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
- * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
- * TIME. AS A RESULT, QD electronic SHALL NOT BE HELD LIABLE FOR ANY
- * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
- * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
- * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
- **************************************************************************************************/
 #ifndef __LCD_H
 #define __LCD_H
 #include "sys.h"
 #include "stdlib.h"
+#include "SPI_Helper.h"
 
 // LCD重要参数集
 typedef struct
@@ -52,6 +18,7 @@ typedef struct
 
 // LCD参数
 extern _lcd_dev lcddev; // 管理LCD重要参数
+extern SPI_Helper SPI_LCD;
 /////////////////////////////////////用户配置区///////////////////////////////////
 #define USE_HORIZONTAL 0 // 定义液晶屏顺时针旋转方向 	0-0度旋转，1-90度旋转，2-180度旋转，3-270度旋转
 
@@ -67,7 +34,7 @@ extern u16 BACK_COLOR;  // 背景颜色.默认为白色
 ////////////////////////////////////////////////////////////////////
 //-----------------LCD端口定义----------------
 #define GPIO_TYPE GPIOB // GPIO组类型
-#define LED       12     // 背光控制引脚       PB12
+#define LED       12    // 背光控制引脚       PB12
 #define LCD_CS    13    // 片选引脚            PB13
 #define LCD_RS    14    // 寄存器/数据选择引脚  PB14
 #define LCD_RST   15    // 复位引脚            PB15
@@ -82,19 +49,18 @@ extern u16 BACK_COLOR;  // 背景颜色.默认为白色
 // #define LCD_RS_SET  GPIO_TYPE->BSRR = 1 << LCD_RS  // 数据/命令  	PB14
 // #define LCD_RST_SET GPIO_TYPE->BSRR = 1 << LCD_RST // 复位			PB15
 
-//#define LCD_CS_SET  PBout(13)=1  // 片选端口  	PB13
-#define LCD_RS_SET  PBout(14)=1  // 数据/命令  	PB14
-#define LCD_RST_SET PBout(15)=1 // 复位			PB15
-
+// #define LCD_CS_SET  PBout(13)=1  // 片选端口  	PB13
+#define LCD_RS_SET  PBout(14) = 1 // 数据/命令  	PB14
+#define LCD_RST_SET PBout(15) = 1 // 复位			PB15
 
 // GPIO复位（拉低）
 // #define LCD_CS_CLR  GPIO_TYPE->BRR = 1 << LCD_CS  // 片选端口  	PB13
 // #define LCD_RS_CLR  GPIO_TYPE->BRR = 1 << LCD_RS  // 数据/命令  PB14
 // #define LCD_RST_CLR GPIO_TYPE->BRR = 1 << LCD_RST // 复位		PB15
 
-//#define LCD_CS_CLR  PBout(13)=0 // 片选端口  	PB13
-#define LCD_RS_CLR  PBout(14)=0 // 数据/命令  PB14
-#define LCD_RST_CLR PBout(15)=0 // 复位		PB125
+// #define LCD_CS_CLR  PBout(13)=0 // 片选端口  	PB13
+#define LCD_RS_CLR  PBout(14) = 0 // 数据/命令  PB14
+#define LCD_RST_CLR PBout(15) = 0 // 复位		PB125
 
 // 画笔颜色
 #define WHITE   0xFFFF
@@ -137,7 +103,7 @@ void LCD_DrawRectangle(u16 x1, u16 y1, u16 x2, u16 y2);
 void LCD_SetWindows(u16 xStar, u16 yStar, u16 xEnd, u16 yEnd);
 
 u16 LCD_RD_DATA(void); // 读取LCD数据
-void LCD_WriteReg(u8 LCD_Reg, u16 LCD_RegValue);
+void LCD_WriteReg(u8 LCD_Reg, u8 LCD_RegValue);
 void LCD_WR_DATA(u8 data);
 u16 LCD_ReadReg(u8 LCD_Reg);
 void LCD_WriteRAM_Prepare(void);

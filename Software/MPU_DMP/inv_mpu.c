@@ -41,7 +41,7 @@
 #if defined STM32F10X_MD // 在编译器中定义 STM32F10X_MD 则使用这段,以下的系统平台将不会用到
 
 #define MPU_Device_Adrr 0x68 // 定义器件I2C地址,在定义变量st.hw.addr时用到
-#include "mpu6500_driver.h"
+
 #include "delay.h"
 #include "timer.h"
 #include "stdio.h"

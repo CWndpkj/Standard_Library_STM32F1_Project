@@ -2,16 +2,16 @@
 #include "lcd.h"
 #include "stdlib.h"
 #include "delay.h"
-#include "SPI_Helper.h"
+#include <math.h>
 
-// π‹¿ÌLCD÷ÿ“™≤Œ ˝
-// ƒ¨»œŒ™ ˙∆¡
+// ÁÆ°ÁêÜLCDÈáçË¶ÅÂèÇÊï∞
+// ÈªòËÆ§‰∏∫Á´ñÂ±è
 _lcd_dev lcddev;
 
-// ª≠± —’…´,±≥æ∞—’…´
+// ÁîªÁ¨îÈ¢úËâ≤,ËÉåÊôØÈ¢úËâ≤
 u16 POINT_COLOR = 0x0000, BACK_COLOR = 0xFFFF;
 u16 DeviceCode;
-
+SPI_Helper SPI_LCD(GPIO_Pin_13);
 /*****************************************************************************
  * @name       :void LCD_WR_REG(u8 data)
  * @date       :2018-08-09
@@ -21,13 +21,8 @@ u16 DeviceCode;
  ******************************************************************************/
 void LCD_WR_REG(u8 data)
 {
-    // LCD_CS_CLR;
     LCD_RS_CLR;
-    // SPI_WriteByte(SPI2, data);
-
-    SPI_Helper_WriteByte(data);
-
-    // LCD_CS_SET;
+    SPI_LCD.WriteByte(data);
 }
 
 /*****************************************************************************
@@ -39,13 +34,8 @@ void LCD_WR_REG(u8 data)
  ******************************************************************************/
 void LCD_WR_DATA(u8 data)
 {
-    // LCD_CS_CLR;
     LCD_RS_SET;
-    // SPI_WriteByte(SPI2, data);
-
-    SPI_Helper_WriteByte(data);
-
-    // LCD_CS_SET;
+    SPI_LCD.WriteByte(data);
 }
 
 /*****************************************************************************
@@ -56,9 +46,12 @@ void LCD_WR_DATA(u8 data)
                 LCD_RegValue:Data to be written
  * @retvalue   :None
 ******************************************************************************/
-void LCD_WriteReg(u8 LCD_Reg, u16 LCD_RegValue)
+void LCD_WriteReg(u8 LCD_Reg, u8 LCD_RegValue)
 {
-    SPI_Helper_WriteCommand_Data(&LCD_Reg, 1, (u8*)&LCD_RegValue, 2);
+    LCD_RS_CLR;
+    SPI_LCD.WriteByte(LCD_Reg);
+    LCD_RS_SET;
+    SPI_LCD.WriteByte(LCD_RegValue);
 }
 
 /*****************************************************************************
@@ -74,7 +67,7 @@ void LCD_WriteRAM_Prepare(void)
 }
 
 /*****************************************************************************
- * @name       :void Lcd_WriteData_16Bit(u16 Data)
+ * @name       :void LCD_WR_DATA_16Bit(u16 Data)
  * @date       :2018-08-09
  * @function   :Write an 16-bit command to the LCD screen
  * @parameters :Data:Data to be written
@@ -82,18 +75,8 @@ void LCD_WriteRAM_Prepare(void)
  ******************************************************************************/
 void Lcd_WriteData_16Bit(u16 Data)
 {
-    // LCD_CS_CLR;
     LCD_RS_SET;
-    // SPI_WriteByte(SPI2, Data >> 8);
-    // SPI_WriteByte(SPI2, Data);
-    u8 Buff[2];
-    Buff[0]=Data>>8;
-    Buff[1]=Data;
-
-    SPI_Helper_WriteLen(Buff, 2);
-
-
-    // LCD_CS_SET;
+    SPI_LCD.WriteHalfWord(Data);
 }
 
 /*****************************************************************************
@@ -106,7 +89,7 @@ void Lcd_WriteData_16Bit(u16 Data)
 ******************************************************************************/
 void LCD_DrawPoint(u16 x, u16 y)
 {
-    LCD_SetCursor(x, y); // …Ë÷√π‚±ÍŒª÷√
+    LCD_SetCursor(x, y); // ËÆæÁΩÆÂÖâÊ†á‰ΩçÁΩÆ
     Lcd_WriteData_16Bit(POINT_COLOR);
 }
 
@@ -119,16 +102,15 @@ void LCD_DrawPoint(u16 x, u16 y)
  ******************************************************************************/
 void LCD_Clear(u16 Color)
 {
-    unsigned int i, m;
     LCD_SetWindows(0, 0, lcddev.width - 1, lcddev.height - 1);
-    // LCD_CS_CLR;
     LCD_RS_SET;
-    for (i = 0; i < lcddev.height; i++) {
-        for (m = 0; m < lcddev.width; m++) {
-            Lcd_WriteData_16Bit(Color);
-        }
+    for (u8 i = 0; i < 2; i++) {
+        SPI_LCD.CircleWriteHalfWord(Color, lcddev.width * 160);
     }
-    // LCD_CS_SET;
+    /**
+     * @note ÊöÇÊú™Ëß£ÂÜ≥,Âú®‰ΩøÁî®‰∏ãÈù¢ËøôÁßçÊñπÊ≥ïÊó∂ÔºåÊó†Ê≥ïÂÆûÁé∞ÂÖ®Â±èÊ∏ÖÂ±è
+     */
+    // SPI_LCD.CircleWriteHalfWord(Color, lcddev.width*lcddev.height);
 }
 
 /*****************************************************************************
@@ -141,11 +123,11 @@ void LCD_Clear(u16 Color)
 void LCD_GPIOInit(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);                                  //  πƒ‹GPIOB ±÷”
-    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15; // GPIOB12,13,14,15
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);                    // ‰ΩøËÉΩGPIOBÊó∂Èíü
+    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_12 | GPIO_Pin_14 | GPIO_Pin_15; // GPIOB12,13,14,15
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP; // Õ∆ÕÏ ‰≥ˆ
-    GPIO_Init(GPIOB, &GPIO_InitStructure);            // ≥ı ºªØ
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP; // Êé®ÊåΩËæìÂá∫
+    GPIO_Init(GPIOB, &GPIO_InitStructure);            // ÂàùÂßãÂåñ
 }
 
 /*****************************************************************************
@@ -172,11 +154,10 @@ void LCD_RESET(void)
  ******************************************************************************/
 void LCD_Init(void)
 {
-    // SPI2_Init();    // ”≤º˛SPI2≥ı ºªØ
-    SPI_Helper_Init(GPIO_Pin_13);
-    LCD_GPIOInit(); // LCD GPIO≥ı ºªØ
-    LCD_RESET();    // LCD ∏¥Œª
-    //*************2.8inch ILI9341≥ı ºªØ**********//
+    LCD_GPIOInit(); // LCD GPIOÂàùÂßãÂåñ
+    SPI_LCD.Init();
+    LCD_RESET(); // LCD Â§ç‰Ωç
+                 //*************2.8inch ILI9341ÂàùÂßãÂåñ**********//
     LCD_WR_REG(0xCF);
     LCD_WR_DATA(0x00);
     LCD_WR_DATA(0xC9); // C1
@@ -270,11 +251,16 @@ void LCD_Init(void)
     delay_ms(120);
     LCD_WR_REG(0x29); // display on
 
-    LCD_direction(USE_HORIZONTAL); // …Ë÷√LCDœ‘ æ∑ΩœÚ
-    LCD_LED = 1;                   // µ„¡¡±≥π‚
-    LCD_Clear(WHITE);              // «Â»´∆¡∞◊…´
+    LCD_direction(USE_HORIZONTAL); // ËÆæÁΩÆLCDÊòæÁ§∫ÊñπÂêë
+    LCD_LED = 1;                   // ÁÇπ‰∫ÆËÉåÂÖâ
+    LCD_Clear(WHITE);              // Ê∏ÖÂÖ®Â±èÁôΩËâ≤
 }
-
+void LCD_DisplayOn(void)
+{
+}
+void LCD_DisplayOff(void)
+{
+}
 /*****************************************************************************
  * @name       :void LCD_SetWindows(u16 xStar, u16 yStar,u16 xEnd,u16 yEnd)
  * @date       :2018-08-09
@@ -299,7 +285,7 @@ void LCD_SetWindows(u16 xStar, u16 yStar, u16 xEnd, u16 yEnd)
     LCD_WR_DATA(yEnd >> 8);
     LCD_WR_DATA(0x00FF & yEnd);
 
-    LCD_WriteRAM_Prepare(); // ø™ º–¥»ÎGRAM
+    LCD_WriteRAM_Prepare(); // ÂºÄÂßãÂÜôÂÖ•GRAM
 }
 
 /*****************************************************************************
@@ -321,8 +307,8 @@ void LCD_SetCursor(u16 Xpos, u16 Ypos)
  * @function   :Setting the display direction of LCD screen
  * @parameters :direction:0-0 degree
                           1-90 degree
-                                                    2-180 degree
-                                                    3-270 degree
+                          2-180 degree
+                          3-270 degree
  * @retvalue   :None
 ******************************************************************************/
 void LCD_direction(u8 direction)

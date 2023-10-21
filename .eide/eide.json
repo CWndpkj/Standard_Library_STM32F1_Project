@@ -27,11 +27,15 @@
       "excludeList": [
         "Hardware/MPU6500_driver/MPU6500_driver.c",
         "Software/Time_Helper/Time_Helper.c",
-        "Hardware/I2CHost/I2CHost.cpp",
         "Hardware/I2C_Helper/tmp.c",
         "Hardware/Timer/Timer.c",
         "Hardware/I2C_Helper/I2C_Helper.c",
-        "Hardware/WS2812/WS2812.c"
+        "Hardware/WS2812/WS2812.c",
+        "Hardware/MPU6500_driver",
+        "Software/DMA_Helper",
+        "System/sys/sys.c",
+        "Hardware/I2CHost",
+        "Hardware/I2C_Helper"
       ],
       "toolchain": "AC5",
       "compileConfig": {
@@ -67,12 +71,17 @@
         },
         "options": "null"
       },
-      "uploader": "OpenOCD",
+      "uploader": "STLink",
       "uploadConfig": {
-        "bin": "",
-        "target": "stm32f1x",
-        "interface": "stlink",
-        "baseAddr": "0x08000000"
+        "bin": "${ExecutableName}.hex",
+        "proType": "SWD",
+        "resetMode": "HWrst",
+        "runAfterProgram": true,
+        "speed": 4000,
+        "address": "0x08000000",
+        "elFile": "None",
+        "optionBytes": ".eide/debug.st.option.bytes.ini",
+        "otherCmds": ""
       },
       "uploadConfigMap": {
         "JLink": {

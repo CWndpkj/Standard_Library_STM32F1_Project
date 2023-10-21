@@ -7,7 +7,9 @@
 #include "OLED.h"
 #include "LED.h"
 #include "stdio.h"
-
+#ifdef __cplusplus
+extern "C" {
+#endif // DEBUG
 u8 I2C_DMA_Transfer_Finish_Flag;
 
 void I2C_DMA_DMAInit(DMA_Channel_TypeDef *DMAy_Channelx, u32 BufferSize, u32 DIR, u32 MemoryBaseAddr, u32 Priority);
@@ -86,7 +88,6 @@ void DMA1_Channel4_IRQHandler()
         DMA_ClearITPendingBit(DMA1_IT_TC4);
     }
 }
-
 /**
  * @brief I2C_Rx中断函数
  *
@@ -103,7 +104,6 @@ void DMA1_Channel5_IRQHandler()
         DMA_ClearITPendingBit(DMA1_IT_TC5);
     }
 }
-
 // void I2C2_EV_IRQHandler(void)
 // {
 //     if (I2C_GetITStatus(I2C2, I2C_IT_TXE) == SET) {
@@ -446,3 +446,6 @@ u8 I2C_DMA_SlaveDeviceReset()
     I2C_Cmd(I2C2, ENABLE);
     return 0;
 }
+#ifdef __cplusplus
+}
+#endif // DEBUG

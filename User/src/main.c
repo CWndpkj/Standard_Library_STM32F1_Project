@@ -7,36 +7,40 @@
 #include "stdio.h"
 #include "AHT20.h"
 #include "RTC_Helper.h"
-#include "inv_mpu.h"
-#include "I2C_Helper.h"
 #include "HWInterface.h"
 #include "AnoPTv8.h"
 #include "WS2812.h"
-#include "BMP280_Helper.h"
+// #include "BMP280_Helper.h"
 #include "W25Qxx_Helper.h"
 #include "../Rsc/image_qq.h"
 #include "test.h"
 #include "lcd.h"
 #include "GUI.h"
+#include "Touch.h"
+#include "../Rsc/pic.h"
 
+W25Qxx_Helper W25Q64_Data_main(GPIO_Pin_6);
 void HardWareInit()
 {
-    delay_ms(500);
+    delay_ms(200);
     //  WS2812_Init();
-    LED_Init();
-    LED_Off();
+    // LED_Init();
+    // LED_Off();
     USART_Helper_Init();
     OLED_Init();
-    LCD_Init();
-    //  AHT20_Init();
+    W25Q64_Data_main.Init();
+    // LCD_Init();
+
+    // LCD_SetWindows(0, 0, 32 - 1, 32 - 1); // 窗口设置
+    //  TP_Init();
+    //    AHT20_Init();
     //    RTC_Helper_Init();
     //    OLED_ShowNum(1,1,MPU6500_DMP_Init(),1);
-    //  MPU6500_Init();
+    //    MPU6500_Init();
 
     // BMP280_Init();
 
     // printf("%s", "hello world");
-    //W25Qxx_Helper_Init();
 }
 
 uint8_t databuf[14];
@@ -61,21 +65,30 @@ float value[3];
 int main()
 {
     HardWareInit();
-    //LCD_DrawFillRectangle(0, 0, 50, 50);
-    Gui_Drawbmp16(0, 0, gImage_qq_logo);
+    //Gui_LoadPicFromW25Qxx();
+    //   LCD_DrawFillRectangle(0, 0, 50, 50);
+    //   Gui_Drawbmp16(0, 0, gImage_test);
+    // Gui_DrawPic(100, 150, 40, 40, gImage_qq);
+    OLED_ShowString(1, 1, "hello world");
+    //  printf("hello world\t\n");
 
-    // u8 ReadBuff[3200] = {0};
-    //   u8 WriteBuff[10] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
+    u8 ReadBuff[1000] = {0};
+    // u8 writeBuff[10]  = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19};
+    u8 writetest[300];
+    for (u16 i = 0; i < 300; i++) {
+        writetest[i] = i;
+    }
 
-    // W25Qxx_Helper_Write(0x0, gImage_qq_logo, 3200);
+    // W25Qxx_Helper_Write(24576 * 6, (u8 *)gImage_test, 24576);//24576*3 start
 
-    // W25Qxx_Helper_Read(0x0, ReadBuff, 3200);
-    // OLED_ShowHexNum(1, 1, ReadBuff[3199], 2);
+    W25Q64_Data_main.Write(0, writetest, 300);
+    W25Q64_Data_main.Read(0, ReadBuff, 1000);
+    OLED_ShowHexNum(2, 1, ReadBuff[0], 2);
     //  Touch_Test();
-    //   AHT20_value AHT_value;
-    //     MPU6500_Value MPU_value;
-    //     MPU6500_StartAquire();
-    //   OLED_ShowString(1, 1, "hello world");
+    //  AHT20_value AHT_value;
+    //  MPU6500_Value MPU_value;
+    //  MPU6500_StartAquire();
+    //  OLED_ShowString(1, 1, "hello world");
 
     // SPI_Helper_WriteLen( 0x06, NULL, 0);
     // u8 ADDR[3] = {0x00, 0x00, 0x00};
@@ -92,15 +105,19 @@ int main()
     // OLED_ShowHexNum(3, 1, MPU6500_GetDeviceID(), 2);
 
     while (1) {
-        // AnoPTv8HwTrigger1ms();
-        //  OLED_ShowHexNum(2, 1, MPU6500_GetAddr(), 2);
-        // OLED_ShowNum(2, 1, i++, 5);
-        // MPU6500_dmp_get_euler_angle(NULL, NULL, value, value + 1, value + 2);
-        // AnoPTv8TxFrameF1(value[0], value[1], value[2]);
-        // AnoPTv8HwTrigger1ms();
-        // printf("%s:%f\t\n", "pitch:", value[0]);
-        // printf("%s:%f\t\n", "roll:", value[1]);
-        // printf("%s:%f\t\n", "yaw:", value[2]);
+        // Gui_DrawPic(0, 0, 32, 32, gImage_test);
+
+        // TP_Scan(0);
+        // printf("x=%d\t\n,y=%d\t\n", tp_dev.x, tp_dev.y);
+        //  AnoPTv8HwTrigger1ms();
+        //   OLED_ShowHexNum(2, 1, MPU6500_GetAddr(), 2);
+        //  OLED_ShowNum(2, 1, i++, 5);
+        //  MPU6500_dmp_get_euler_angle(NULL, NULL, value, value + 1, value + 2);
+        //  AnoPTv8TxFrameF1(value[0], value[1], value[2]);
+        //  AnoPTv8HwTrigger1ms();
+        //  printf("%s:%f\t\n", "pitch:", value[0]);
+        //  printf("%s:%f\t\n", "roll:", value[1]);
+        //  printf("%s:%f\t\n", "yaw:", value[2]);
 
         // AHT20_GetValue(&AHT_value);
         //    MPU6500_GetValue(&MPU_value);

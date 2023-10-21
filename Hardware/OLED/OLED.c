@@ -2,6 +2,10 @@
 #include "OLED_Font.h"
 #include "delay.h"
 #include "I2C_DMA.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // DEBUG
 /*引脚配置*/
 // #define OLED_W_SCL(x) GPIO_WriteBit(GPIOB, GPIO_Pin_12, (BitAction)(x))
 // #define OLED_W_SDA(x) GPIO_WriteBit(GPIOB, GPIO_Pin_13, (BitAction)(x))
@@ -152,7 +156,7 @@ void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
  * @param  String 要显示的字符串，范围：ASCII可见字符
  * @retval 无
  */
-void OLED_ShowString(uint8_t Line, uint8_t Column, char *String)
+void OLED_ShowString(uint8_t Line, uint8_t Column, const char *String)
 {
     uint8_t i;
     for (i = 0; String[i] != '\0'; i++) {
@@ -257,8 +261,8 @@ void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Leng
  */
 void OLED_Init(void)
 {
-    u8 Command[23]={0xAE,0xD5,0x80,0xA8,0x3F,0xD3,0x00,0x40,0xA1,
-    0xC8,0xDA,0x12,0x81,0xCF,0xD9,0xF1,0xDB,0x30,0xA4,0xA6,0x8D,0x14,0xAF};
+    u8 Command[23] = {0xAE, 0xD5, 0x80, 0xA8, 0x3F, 0xD3, 0x00, 0x40, 0xA1,
+                      0xC8, 0xDA, 0x12, 0x81, 0xCF, 0xD9, 0xF1, 0xDB, 0x30, 0xA4, 0xA6, 0x8D, 0x14, 0xAF};
     OLED_I2C_Init(); // 端口初始化
 
     // OLED_WriteCommand(0xAE); // 关闭显示
@@ -299,6 +303,9 @@ void OLED_Init(void)
 
     // OLED_WriteCommand(0xAF); // 开启显示
 
-    I2C_DMA_Write_Len(OLED_SLAVE_ADDR,0x00,23,Command);
+    I2C_DMA_Write_Len(OLED_SLAVE_ADDR, 0x00, 23, Command);
     OLED_Clear(); // OLED清屏
 }
+#ifdef __cplusplus
+}
+#endif // DEBUG
