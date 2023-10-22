@@ -73,7 +73,7 @@ int8_t SPI_Helper::SPIInit(uint16_t SPI_DataSize_x)
     SPI_Cmd(SPI1, DISABLE);
     // 初始化SPI
     SPI_InitTypeDef SPI_InitStruct;
-    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32; // 波特率预分频系数
+    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2; // 波特率预分频系数
     SPI_InitStruct.SPI_CPHA              = SPI_CPHA_1Edge;
     SPI_InitStruct.SPI_CPOL              = SPI_CPOL_Low;                    // SPI模式0
     SPI_InitStruct.SPI_CRCPolynomial     = 7;                               // CRC校验多项式

@@ -108,7 +108,7 @@ void USART2_IRQHandler(void)
         // note:注意查看参数! 不可通过以下方式清除IDLE,因为IDLE位为只读
         // USART_ClearITPendingBit(USART1,USART_IT_IDLE); // 清除中断标志位
         // 按照手册,读取SR寄存器,再读取DR寄存器,可清除   USART_IT_IDLE  标志位
-        USART2->DR; // 清除   USART_IT_IDLE  标志位
+        (void *)USART2->DR; // 清除   USART_IT_IDLE  标志位
     }
 }
 void DMA1_Channel6_IRQHandler()

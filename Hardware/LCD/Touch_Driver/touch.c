@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 SPI_Helper SPI_TP(TCS);
-W25Qxx_Helper W25Q64_INI(GPIO_Pin_7);
+W25Qxx_Helper W25Q64_INI(GPIO_Pin_0);
 _m_tp_dev tp_dev =
     {
         TP_Init,
@@ -281,10 +281,11 @@ void TP_Save_Adjdata(void)
 ******************************************************************************/
 u8 TP_Get_Adjdata(void)
 {
-    s32 tempfac;
+    u32 tempfac;
     // tempfac = AT24CXX_ReadOneByte(SAVE_ADDR_BASE + 13); // 读取标记字,看是否校准过！
-    W25Q64_INI.Read(SAVE_ADDR_BASE + 13, (u8 *)&tempfac, 1);
-    if (tempfac == 0X0A) // 触摸屏已经校准过了
+    u8 adjusted_flag;
+    W25Q64_INI.Read(SAVE_ADDR_BASE + 13, &adjusted_flag, 1);
+    if (adjusted_flag == 0X0A) // 触摸屏已经校准过了
     {
         // tempfac     = AT24CXX_ReadLenByte(SAVE_ADDR_BASE, 4);
         W25Q64_INI.Read(SAVE_ADDR_BASE, (u8 *)&tempfac, 4);

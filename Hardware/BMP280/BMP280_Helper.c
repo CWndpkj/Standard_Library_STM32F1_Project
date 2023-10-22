@@ -3,6 +3,7 @@
 #include "delay.h"
 #include "I2C_DMA.h"
 #include <stdio.h>
+#include <BMP280_Helper.h>
 /*!
  *  @brief Prints the execution status of the APIs.
  *
@@ -37,7 +38,7 @@ int8_t bmp_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
     return I2C_DMA_Write_Len(dev_id,reg_addr,len,data);
 }
-void BMP280_Init()
+void BMP280_Helper_Init()
 {
     I2C_DMA_Init();
 

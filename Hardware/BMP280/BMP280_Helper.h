@@ -3,7 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void BMP280_Init();
+void BMP280_Helper_Init();
 #ifdef __cplusplus
 }
 #endif
